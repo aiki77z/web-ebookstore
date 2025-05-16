@@ -31,9 +31,20 @@ public class Order {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
     
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> items = new ArrayList<>();
     
     @Column(length = 20)
     private String status = "PENDING";
+    
+    // 添加辅助方法来管理关系
+    public void addOrderItem(OrderItem item) {
+        items.add(item);
+        item.setOrder(this);
+    }
+    
+    public void removeOrderItem(OrderItem item) {
+        items.remove(item);
+        item.setOrder(null);
+    }
 } 

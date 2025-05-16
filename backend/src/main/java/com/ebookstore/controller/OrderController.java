@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/orders")
@@ -54,16 +56,44 @@ public class OrderController {
             // 处理从购物车结算的情况
             List<Long> cartItemIds = null;
             if (payload.containsKey("cartItemIds")) {
-                cartItemIds = (List<Long>) payload.get("cartItemIds");
-            } else {
-                // 如果没有指定cartItemIds，获取所有已选中的项目
-                cartItemIds = null;
+                try {
+                    // 尝试获取购物车项目ID列表
+                    Object cartItemIdsObj = payload.get("cartItemIds");
+                    if (cartItemIdsObj instanceof List) {
+                        cartItemIds = ((List<?>) cartItemIdsObj).stream()
+                                .map(item -> {
+                                    if (item instanceof Integer) {
+                                        return ((Integer) item).longValue();
+                                    } else if (item instanceof Long) {
+                                        return (Long) item;
+                                    } else if (item instanceof String) {
+                                        return Long.parseLong((String) item);
+                                    } else if (item instanceof Number) {
+                                        return ((Number) item).longValue();
+                                    }
+                                    return null;
+                                })
+                                .filter(id -> id != null)
+                                .collect(Collectors.toList());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return ResponseEntity.badRequest()
+                            .body(Collections.emptyList());
+                }
+            }
+
+            // 检查cartItemIds是否为空，如果为空返回错误
+            if (cartItemIds == null || cartItemIds.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Collections.emptyList());
             }
 
             return ResponseEntity.ok(orderService.createOrder(cartItemIds));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.emptyList());
         }
     }
 } 

@@ -14,7 +14,9 @@ export default function CartPage() {
     loading,
     error,
     fetchCart,
-    fetchOrders
+    fetchOrders,
+    addOrder,
+    setCartItems
   } = useContext(CartContext);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -103,18 +105,17 @@ export default function CartPage() {
     try {
       setCheckoutLoading(true);
 
-      // 获取选中的购物车项ID
-      const cartItemIds = selectedItems.map(item => item.id);
-
-      // 调用API创建订单
-      await orderApi.createOrder({ cartItemIds });
-
-      // 刷新购物车和订单数据
-      await fetchCart();
-      fetchOrders && fetchOrders();
-
+      // 使用addOrder处理购物车项的购买
+      await addOrder(selectedItems);
+      
       // 显示成功提示
       setIsModalVisible(true);
+      
+      // 刷新购物车数据
+      await fetchCart();
+      
+      // 如果存在未完成的结算，确保本地UI被更新
+      setCartItems(prev => prev.filter(item => !selectedItems.some(selected => selected.id === item.id)));
     } catch (err) {
       message.error('结算失败: ' + (err.message || '未知错误'));
       console.error('结算失败:', err);

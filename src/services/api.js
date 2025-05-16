@@ -2,7 +2,7 @@
 const API_BASE_URL = 'http://localhost:8080/api';
 
 // 通用请求函数
-async function request(url, options = {}) {
+async function request(url, options = {}, retries = 1) {
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, {
       headers: {
@@ -13,8 +13,21 @@ async function request(url, options = {}) {
     });
     
     if (!response.ok) {
-      // 不要尝试解析错误响应为JSON，可能会导致额外错误
-      throw new Error(`请求失败：${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage = `请求失败：${response.status} ${response.statusText}`;
+      try {
+        // 尝试解析错误响应为JSON
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message) {
+          errorMessage = errorJson.message;
+        }
+      } catch (e) {
+        // 如果不是JSON，使用原始错误文本
+        if (errorText) {
+          errorMessage += ` - ${errorText}`;
+        }
+      }
+      throw new Error(errorMessage);
     }
     
     // 检查响应是否为空
@@ -26,6 +39,13 @@ async function request(url, options = {}) {
     return JSON.parse(text);
   } catch (error) {
     console.error('API请求错误:', error);
+    
+    // 实现重试机制
+    if (retries > 0 && !url.includes('/orders/create')) {
+      console.log(`重试请求 ${url}，剩余重试次数: ${retries - 1}`);
+      return request(url, options, retries - 1);
+    }
+    
     // 抛出一个更通用的错误，让调用者决定如何处理
     throw error;
   }

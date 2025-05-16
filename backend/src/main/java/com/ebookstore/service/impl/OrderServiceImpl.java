@@ -72,7 +72,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public List<OrderItemDTO> createOrder(List<Long> cartItemIds) {
         User user = userService.getCurrentUser();
-        
+                
         // 获取要购买的购物车项
         List<CartItem> selectedItems;
         if (cartItemIds == null || cartItemIds.isEmpty()) {
@@ -84,45 +84,50 @@ public class OrderServiceImpl implements OrderService {
                     .filter(item -> item.getUser().getId().equals(user.getId()))
                     .collect(Collectors.toList());
         }
-        
+                
         if (selectedItems.isEmpty()) {
             throw new IllegalArgumentException("没有可购买的商品");
         }
-        
+                
         // 创建订单
         Order order = new Order();
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PENDING");
-
-        // 创建一个新的OrderItems列表
-        List<OrderItem> orderItems = new ArrayList<>();
-
-
+        order.setStatus("COMPLETED"); // 直接设置为已完成状态
+        
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem cartItem : selectedItems) {
             OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
             orderItem.setBook(cartItem.getBook());
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(cartItem.getBook().getPrice());
             orderItem.setSubtotal(cartItem.getBook().getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
             
-            order.getItems().add(orderItem);
+            // 使用辅助方法建立关系
+            order.addOrderItem(orderItem);
             totalAmount = totalAmount.add(orderItem.getSubtotal());
         }
         
+        // 设置订单总金额
         order.setTotalAmount(totalAmount);
-        order = orderRepository.save(order);
         
-        // 保存后删除购物车中的项目
-        cartItemRepository.deleteAll(selectedItems);
-        
-        // 转换返回数据
-        return order.getItems().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        try {
+            // 保存订单及订单项
+            order = orderRepository.save(order);
+            
+            // 删除购物车中的相关项目
+            cartItemRepository.deleteAll(selectedItems);
+            
+            // 转换返回数据
+            return order.getItems().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            // 记录错误并重新抛出
+            e.printStackTrace();
+            throw new RuntimeException("创建订单或删除购物车项失败", e);
+        }
     }
     
     private OrderItemDTO convertToDTO(OrderItem orderItem) {
@@ -162,11 +167,10 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PENDING");
+        order.setStatus("COMPLETED");
 
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;
-        List<OrderItem> orderItems = new ArrayList<>();
 
         for (Map<String, Object> item : items) {
             Long bookId = Long.valueOf(item.get("bookId").toString());
@@ -176,25 +180,30 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
 
             OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
             orderItem.setBook(book);
             orderItem.setQuantity(quantity);
             orderItem.setPrice(book.getPrice());
             orderItem.setSubtotal(book.getPrice().multiply(BigDecimal.valueOf(quantity)));
 
-            orderItems.add(orderItem);
+            // 使用辅助方法建立关系
+            order.addOrderItem(orderItem);
             totalAmount = totalAmount.add(orderItem.getSubtotal());
         }
 
         order.setTotalAmount(totalAmount);
-        order.setItems(orderItems);
-
-        // 保存订单
-        order = orderRepository.save(order);
-
-        // 转换返回数据
-        return order.getItems().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        
+        try {
+            // 保存订单
+            order = orderRepository.save(order);
+        
+            // 转换返回数据
+            return order.getItems().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            // 记录错误并重新抛出
+            e.printStackTrace();
+            throw new RuntimeException("创建直接订单失败", e);
+        }
     }
 } 

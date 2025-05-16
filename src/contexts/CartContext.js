@@ -131,38 +131,31 @@ export const CartProvider = ({ children }) => {
           quantity: item.quantity
         }));
 
-        await orderApi.createOrder(buyNowItems);
+        await orderApi.createOrder({
+          directBuy: true,
+          items: buyNowItems
+        });
         await fetchOrders();
         setError(null);
       } else {
         //从购物车里买
-        const cartItemIds = items.filter(item => item.selected).map(item => item.id);
+        const cartItemIds = items.map(item => item.id);
         if (cartItemIds.length === 0) {
           throw new Error('请选择要购买的商品');
         }
-        //await cartApi.removeFromCart(cartItemIds);
-        await orderApi.createOrder({cartItemIds});
+        
+        // 调用后端API创建订单
+        await orderApi.createOrder({ cartItemIds });
+        
+        // 更新购物车和订单数据
         await fetchCart();
         await fetchOrders();
         setError(null);
       }
-    }catch (err) {
+    } catch (err) {
       console.error('创建订单失败:', err);
       setError('创建订单失败');
-
-      const orderItems = items.map(item => ({
-        id: Date.now() + item.id,
-        bookId: item.id,
-        title: item.title,
-        price: item.price,
-        quantity: item.quantity,
-        date: new Date().toLocaleString()
-      }));
-      
-      setOrders(prev => [...prev, ...orderItems]);
-      if(items[0].selected !== undefined){
-        setCartItems(prev => prev.filter(item => !item.selected));
-      }
+      throw err; // 重新抛出错误，让调用者知道发生了错误
     } finally {
       setLoading(false);
     }
