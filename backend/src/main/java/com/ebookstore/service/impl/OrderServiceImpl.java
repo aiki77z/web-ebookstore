@@ -1,0 +1,200 @@
+package com.ebookstore.service.impl;
+
+import com.ebookstore.dto.OrderDTO;
+import com.ebookstore.dto.OrderItemDTO;
+import com.ebookstore.entity.CartItem;
+import com.ebookstore.entity.Order;
+import com.ebookstore.entity.OrderItem;
+import com.ebookstore.entity.User;
+import com.ebookstore.entity.Book;
+import com.ebookstore.repository.CartItemRepository;
+import com.ebookstore.repository.OrderRepository;
+import com.ebookstore.repository.BookRepository;
+import com.ebookstore.service.OrderService;
+import com.ebookstore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Map;
+
+@Service
+public class OrderServiceImpl implements OrderService {
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Override
+    public List<OrderItemDTO> getOrders() {
+        User user = userService.getCurrentUser();
+        List<OrderItemDTO> orderItems = new ArrayList<>();
+
+        orderRepository.findByUserOrderByOrderDateDesc(user).forEach(order -> {
+            order.getItems().forEach(item -> {
+                orderItems.add(convertToDTO(item));
+            });
+        });
+
+        return orderItems;
+    }
+    
+    @Override
+    public OrderDTO getOrderById(Long id) {
+        User user = userService.getCurrentUser();
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的订单"));
+        
+        // 安全检查
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("无权查看此订单");
+        }
+        
+        return convertToOrderDTO(order);
+    }
+    
+    @Override
+    @Transactional
+    public List<OrderItemDTO> createOrder(List<Long> cartItemIds) {
+        User user = userService.getCurrentUser();
+        
+        // 获取要购买的购物车项
+        List<CartItem> selectedItems;
+        if (cartItemIds == null || cartItemIds.isEmpty()) {
+            // 如果没有指定ID，则获取所有已选中的项目
+            selectedItems = cartItemRepository.findByUserAndSelected(user, true);
+        } else {
+            // 否则获取指定ID的项目
+            selectedItems = cartItemRepository.findAllById(cartItemIds).stream()
+                    .filter(item -> item.getUser().getId().equals(user.getId()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (selectedItems.isEmpty()) {
+            throw new IllegalArgumentException("没有可购买的商品");
+        }
+        
+        // 创建订单
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+
+        // 创建一个新的OrderItems列表
+        List<OrderItem> orderItems = new ArrayList<>();
+
+
+        // 计算总金额并添加订单项
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (CartItem cartItem : selectedItems) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setBook(cartItem.getBook());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPrice(cartItem.getBook().getPrice());
+            orderItem.setSubtotal(cartItem.getBook().getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
+            
+            order.getItems().add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getSubtotal());
+        }
+        
+        order.setTotalAmount(totalAmount);
+        order = orderRepository.save(order);
+        
+        // 保存后删除购物车中的项目
+        cartItemRepository.deleteAll(selectedItems);
+        
+        // 转换返回数据
+        return order.getItems().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
+    private OrderItemDTO convertToDTO(OrderItem orderItem) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String orderDate = orderItem.getOrder().getOrderDate().format(formatter);
+        
+        return new OrderItemDTO(
+                orderItem.getId(),
+                orderItem.getBook().getId(),
+                orderItem.getBook().getTitle(),
+                orderItem.getBook().getAuthor(),
+                orderItem.getPrice(),
+                orderItem.getQuantity(),
+                orderItem.getSubtotal(),
+                orderDate
+        );
+    }
+    
+    private OrderDTO convertToOrderDTO(Order order) {
+        return new OrderDTO(
+                order.getId(),
+                order.getOrderDate(),
+                order.getTotalAmount(),
+                order.getStatus(),
+                order.getItems().stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList())
+        );
+    }
+
+    @Override
+    @Transactional
+    public List<OrderItemDTO> createDirectOrder(List<Map<String, Object>> items) {
+        User user = userService.getCurrentUser();
+
+        // 创建订单
+        Order order = new Order();
+        order.setUser(user);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+
+        // 计算总金额并添加订单项
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        for (Map<String, Object> item : items) {
+            Long bookId = Long.valueOf(item.get("bookId").toString());
+            Integer quantity = Integer.valueOf(item.get("quantity").toString());
+
+            Book book = bookRepository.findById(bookId)
+                    .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setBook(book);
+            orderItem.setQuantity(quantity);
+            orderItem.setPrice(book.getPrice());
+            orderItem.setSubtotal(book.getPrice().multiply(BigDecimal.valueOf(quantity)));
+
+            orderItems.add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getSubtotal());
+        }
+
+        order.setTotalAmount(totalAmount);
+        order.setItems(orderItems);
+
+        // 保存订单
+        order = orderRepository.save(order);
+
+        // 转换返回数据
+        return order.getItems().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+} 
