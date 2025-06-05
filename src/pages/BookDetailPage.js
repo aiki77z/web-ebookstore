@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../contexts/CartContext';
 import {Row, Col, Button, InputNumber, Descriptions, Modal, Spin, Alert, message} from 'antd';
-import {bookApi, orderApi} from '../services/api';
+import {bookApi} from '../services/api';
 
 export default function BookDetailPage() {
   // 使用自定义Hook获取路由参数
@@ -10,12 +10,11 @@ export default function BookDetailPage() {
   const navigate = useNavigate();
   
   // 使用Context消费全局状态
-  const { addToCart, addOrder,fetchOrders } = useContext(CartContext);
+  const { addToCart, directPurchase } = useContext(CartContext);
   
   // 状态管理组件内部数据
   const [book, setBook] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -28,9 +27,14 @@ export default function BookDetailPage() {
   const fetchBookDetail = async () => {
     try {
       setLoading(true);
-      const data = await bookApi.getBook(id);
-      setBook(data);
-      setError(null);
+      const response = await bookApi.getBook(id);
+      
+      if (response && response.success) {
+        setBook(response.data);
+        setError(null);
+      } else {
+        throw new Error(response.message || '获取书籍详情失败');
+      }
     } catch (err) {
       console.error('获取书籍详情失败:', err);
       setError('获取书籍详情失败，请稍后再试');
@@ -50,30 +54,30 @@ export default function BookDetailPage() {
   };
 
   // 事件处理函数
-  const handleBuyNow = async() => {
-    try{
-      // 直接调用后端API创建订单
-      await orderApi.createOrder({
-        directBuy: true,
-        items: [{
-          bookId: book.id,
-          quantity: quantity
-        }]
-      });
-
-      // 显示成功提示
-      setIsModalVisible(true);
-      // 刷新订单列表
-      fetchOrders && fetchOrders();
-    }catch (err){
-      message.error('购买失败: ' + (err.message || '未知错误'));
-    }finally{
+  const handleBuyNow = async () => {
+    try {
+      setLoading(true);
+      await directPurchase(book, quantity);
+      message.success('购买成功！');
+    } catch (err) {
+      console.error('购买失败:', err);
+      message.error(err.message || '购买失败，请稍后再试');
+    } finally {
       setLoading(false);
     }
   };
-  
-  const handleOk = () => {
-    setIsModalVisible(false);
+
+  const handleAddToCart = async () => {
+    try {
+      setLoading(true);
+      await addToCart(book, quantity);
+      message.success('已添加到购物车！');
+    } catch (err) {
+      console.error('添加到购物车失败:', err);
+      message.error(err.message || '添加到购物车失败，请稍后再试');
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleBackToHome = () => {
@@ -148,7 +152,8 @@ export default function BookDetailPage() {
               type="primary"
               size="large"
               style={{ marginRight: '16px' }}
-              onClick={() => addToCart(book, quantity)}
+              onClick={handleAddToCart}
+              loading={loading}
             >
               加入购物车
             </Button>
@@ -157,19 +162,11 @@ export default function BookDetailPage() {
               size="large"
               danger
               onClick={handleBuyNow}
+              loading={loading}
             >
               立即购买
             </Button>
           </div>
-
-          <Modal
-            title="购买成功"
-            visible={isModalVisible}
-            onOk={handleOk}
-            onCancel={() => setIsModalVisible(false)}
-          >
-            <p>购买成功！</p>
-          </Modal>
         </Col>
       </Row>
     </div>

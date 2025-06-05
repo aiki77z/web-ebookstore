@@ -11,11 +11,26 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CartItemDTO {
     private Long id;
-    private Long bookId;
-    private String title;
-    private String author;
-    private BigDecimal price;
-    private String cover;
+    private BookInfo book;
     private Integer quantity;
     private Boolean selected;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookInfo {
+        private Long id;
+        private String title;
+        private String author;
+        private BigDecimal price;
+        private String cover;
+    }
+    
+    // 保持向后兼容的构造函数
+    public CartItemDTO(Long id, Long bookId, String title, String author, BigDecimal price, String cover, Integer quantity, Boolean selected) {
+        this.id = id;
+        this.book = new BookInfo(bookId, title, author, price, cover);
+        this.quantity = quantity;
+        this.selected = selected;
+    }
 } 

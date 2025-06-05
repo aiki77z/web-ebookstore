@@ -38,6 +38,36 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
     
+    // 管理员功能实现
+    @Override
+    public Book saveBook(Book book) {
+        return bookRepository.save(book);
+    }
+    
+    @Override
+    public void deleteBook(Long id) {
+        if (!bookRepository.existsById(id)) {
+            throw new EntityNotFoundException("未找到ID为 " + id + " 的书籍");
+        }
+        bookRepository.deleteById(id);
+    }
+    
+    @Override
+    public List<Book> getAllBooksForAdmin() {
+        return bookRepository.findAll();
+    }
+    
+    @Override
+    public Book getBookEntityById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的书籍"));
+    }
+    
+    @Override
+    public List<Book> searchBooksForAdmin(String query) {
+        return bookRepository.searchBooks(query);
+    }
+    
     private BookDTO convertToDTO(Book book) {
         return new BookDTO(
                 book.getId(),

@@ -1,31 +1,25 @@
 package com.ebookstore.service.impl;
 
 import com.ebookstore.dto.CartItemDTO;
-import com.ebookstore.dto.OrderDTO;
-import com.ebookstore.dto.OrderItemDTO;
 import com.ebookstore.entity.CartItem;
-import com.ebookstore.entity.Order;
-import com.ebookstore.entity.OrderItem;
 import com.ebookstore.entity.User;
 import com.ebookstore.entity.Book;
 import com.ebookstore.repository.BookRepository;
 import com.ebookstore.repository.CartItemRepository;
-import com.ebookstore.repository.OrderRepository;
-import com.ebookstore.service.OrderService;
-import com.ebookstore.service.UserService;
 import com.ebookstore.service.CartService;
+import com.ebookstore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * 购物车服务实现类
+ */
 @Service
 public class CartServiceImpl implements CartService {
     
@@ -41,23 +35,32 @@ public class CartServiceImpl implements CartService {
     @Override
     public List<CartItemDTO> getCartItems() {
         User user = userService.getCurrentUser();
+        if (user == null) {
+            throw new SecurityException("用户未登录");
+        }
         return cartItemRepository.findByUser(user).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
     
     @Override
+    @Transactional
     public CartItemDTO addToCart(Long bookId, Integer quantity) {
         User user = userService.getCurrentUser();
+        if (user == null) {
+            throw new SecurityException("用户未登录");
+        }
+        
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
+                .orElseThrow(() -> new EntityNotFoundException("书籍不存在"));
         
         // 查询购物车中是否已存在该商品
-        CartItem cartItem = cartItemRepository.findByUserAndBookId(user, bookId)
-                .orElse(null);
+        Optional<CartItem> existingItem = cartItemRepository.findByUserAndBookId(user, bookId);
         
-        if (cartItem != null) {
+        CartItem cartItem;
+        if (existingItem.isPresent()) {
             // 已存在则更新数量
+            cartItem = existingItem.get();
             cartItem.setQuantity(cartItem.getQuantity() + quantity);
         } else {
             // 不存在则新增
@@ -73,45 +76,62 @@ public class CartServiceImpl implements CartService {
     }
     
     @Override
-    public void removeFromCart(Long cartItemId) {
+    @Transactional
+    public void removeFromCart(Long itemId, Long userId) {
         User user = userService.getCurrentUser();
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + cartItemId + " 的购物车项目"));
+        if (user == null || !user.getId().equals(userId)) {
+            throw new SecurityException("无权限操作");
+        }
         
-        // 安全检查：确保只能操作自己的购物车
-        if (!cartItem.getUser().getId().equals(user.getId())) {
-            throw new SecurityException("无权操作此购物车项目");
+        CartItem cartItem = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("购物车项不存在"));
+        
+        // 验证该购物车项属于当前用户
+        if (!cartItem.getUser().getId().equals(userId)) {
+            throw new SecurityException("无权限操作该购物车项");
         }
         
         cartItemRepository.delete(cartItem);
     }
     
     @Override
-    public CartItemDTO updateCartItemQuantity(Long cartItemId, Integer quantity) {
+    @Transactional
+    public void updateCartItemQuantity(Long itemId, Integer quantity, Long userId) {
         User user = userService.getCurrentUser();
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + cartItemId + " 的购物车项目"));
-        
-        // 安全检查
-        if (!cartItem.getUser().getId().equals(user.getId())) {
-            throw new SecurityException("无权操作此购物车项目");
+        if (user == null || !user.getId().equals(userId)) {
+            throw new SecurityException("无权限操作");
         }
         
-        cartItem.setQuantity(quantity);
-        cartItem = cartItemRepository.save(cartItem);
+        CartItem cartItem = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("购物车项不存在"));
         
-        return convertToDTO(cartItem);
+        // 验证该购物车项属于当前用户
+        if (!cartItem.getUser().getId().equals(userId)) {
+            throw new SecurityException("无权限操作该购物车项");
+        }
+        
+        if (quantity <= 0) {
+            cartItemRepository.delete(cartItem);
+        } else {
+            cartItem.setQuantity(quantity);
+            cartItemRepository.save(cartItem);
+        }
     }
     
     @Override
+    @Transactional
     public void toggleCartItemSelection(Long cartItemId) {
         User user = userService.getCurrentUser();
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + cartItemId + " 的购物车项目"));
+        if (user == null) {
+            throw new SecurityException("用户未登录");
+        }
         
-        // 安全检查
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new EntityNotFoundException("购物车项不存在"));
+        
+        // 验证该购物车项属于当前用户
         if (!cartItem.getUser().getId().equals(user.getId())) {
-            throw new SecurityException("无权操作此购物车项目");
+            throw new SecurityException("无权限操作该购物车项");
         }
         
         cartItem.setSelected(!cartItem.getSelected());

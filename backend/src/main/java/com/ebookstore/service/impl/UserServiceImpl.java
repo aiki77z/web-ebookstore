@@ -6,6 +6,11 @@ import com.ebookstore.repository.UserRepository;
 import com.ebookstore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ebookstore.dto.UserInfoDTO;
+import com.ebookstore.service.AuthService;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import javax.servlet.http.HttpSession;
 
 import javax.persistence.EntityNotFoundException;
 
@@ -14,20 +19,37 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuthService authService;
     
-    // 简化版，实际项目应使用Spring Security处理认证并获取当前用户
+
     @Override
     public User getCurrentUser() {
-        // 为了演示，固定使用ID为1的用户
-        return userRepository.findById(1L)
-                .orElseGet(() -> {
-                    // 如果不存在则创建默认用户
-                    User defaultUser = new User();
-                    defaultUser.setName("TOM");
-                    defaultUser.setEmail("cat@qq.com");
-                    defaultUser.setAddress("上海市闵行区");
-                    return userRepository.save(defaultUser);
-                });
+        try {
+            // 获取当前HTTP会话
+            ServletRequestAttributes attr = (ServletRequestAttributes)
+                    RequestContextHolder.currentRequestAttributes();
+            HttpSession session = attr.getRequest().getSession(false);
+
+            if (session == null) {
+                throw new RuntimeException("用户未登录");
+            }
+
+            // 通过AuthService获取当前登录用户信息
+            UserInfoDTO currentUserInfo = authService.getCurrentUser(session);
+            if (currentUserInfo == null) {
+                throw new RuntimeException("用户未登录");
+            }
+
+            // 根据用户ID获取用户实体
+            User user = userRepository.findById(currentUserInfo.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
+
+            return user;
+        } catch (Exception e) {
+            throw new RuntimeException("获取当前用户失败: " + e.getMessage());
+        }
     }
     
     @Override

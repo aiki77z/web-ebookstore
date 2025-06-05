@@ -6,18 +6,19 @@ import { Link } from 'react-router-dom';
 const { Title } = Typography;
 
 export default function OrderPage() {
-  const { orders, loading, error, fetchOrders } = useContext(CartContext);
+  const { orders, loading, fetchOrders } = useContext(CartContext);
 
   // 组件加载时获取订单数据
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   const columns = [
     {
       title: '订单日期',
-      dataIndex: 'date',
-      key: 'date',
+      dataIndex: 'orderDate',
+      key: 'orderDate',
+      render: (orderDate) => orderDate || '-'
     },
     {
       title: '书籍名称',
@@ -26,6 +27,11 @@ export default function OrderPage() {
       render: (title, record) => (
         <Link to={`/book/${record.bookId}`}>{title}</Link>
       ),
+    },
+    {
+      title: '作者',
+      dataIndex: 'author',
+      key: 'author',
     },
     {
       title: '单价',
@@ -39,9 +45,10 @@ export default function OrderPage() {
       key: 'quantity',
     },
     {
-      title: '总价',
-      key: 'total',
-      render: (_, record) => `￥${(record.price * record.quantity).toFixed(2)}`
+      title: '小计',
+      dataIndex: 'subtotal',
+      key: 'subtotal',
+      render: (subtotal) => `￥${subtotal || 0}`
     }
   ];
 
@@ -54,18 +61,7 @@ export default function OrderPage() {
       );
     }
 
-    if (error) {
-      return (
-        <Alert
-          message="获取订单失败"
-          description={error}
-          type="error"
-          showIcon
-        />
-      );
-    }
-
-    if (orders.length === 0) {
+    if (!orders || orders.length === 0) {
       return (
         <Empty
           description="暂无订单记录"
@@ -79,7 +75,12 @@ export default function OrderPage() {
         columns={columns}
         dataSource={orders}
         rowKey="id"
-        pagination={false}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total) => `共 ${total} 条记录`,
+        }}
       />
     );
   };

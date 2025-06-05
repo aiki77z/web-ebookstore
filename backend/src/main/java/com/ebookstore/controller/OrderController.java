@@ -3,21 +3,26 @@ package com.ebookstore.controller;
 import com.ebookstore.dto.CartItemDTO;
 import com.ebookstore.dto.OrderDTO;
 import com.ebookstore.dto.OrderItemDTO;
+import com.ebookstore.dto.UserInfoDTO;
 import com.ebookstore.service.CartService;
 import com.ebookstore.service.OrderService;
+import com.ebookstore.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/orders")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class OrderController {
     @Autowired
     private CartService cartService;
@@ -25,75 +30,129 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
     
+    @Autowired
+    private AuthService authService;
+    
     @GetMapping
-    public ResponseEntity<List<OrderItemDTO>> getOrders() {
+    public ResponseEntity<Map<String, Object>> getOrders(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
         try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+            
             List<OrderItemDTO> items = orderService.getOrders();
-            return ResponseEntity.ok(items.isEmpty() ? new ArrayList<>() : items);
+            response.put("success", true);
+            response.put("data", items);
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            return ResponseEntity.ok(new ArrayList<>()); // 返回空数组而不是错误
+            response.put("success", false);
+            response.put("message", "获取订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+    public ResponseEntity<Map<String, Object>> getOrderById(
+            @PathVariable Long id,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            OrderDTO order = orderService.getOrderById(id);
+            response.put("success", true);
+            response.put("data", order);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "获取订单详情失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
     @PostMapping("/create")
-    public ResponseEntity<List<OrderItemDTO>> createOrder(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> createOrder(
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
         try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            List<OrderItemDTO> orderItems;
+            
             // 处理直接购买的情况
             if (payload.containsKey("directBuy") && Boolean.TRUE.equals(payload.get("directBuy"))) {
                 List<Map<String, Object>> items = (List<Map<String, Object>>) payload.get("items");
                 if (items == null || items.isEmpty()) {
-                    return ResponseEntity.badRequest().build();
+                    response.put("success", false);
+                    response.put("message", "订单商品列表为空");
+                    return ResponseEntity.badRequest().body(response);
                 }
-
-                return ResponseEntity.ok(orderService.createDirectOrder(items));
-            }
-
-            // 处理从购物车结算的情况
-            List<Long> cartItemIds = null;
-            if (payload.containsKey("cartItemIds")) {
-                try {
-                    // 尝试获取购物车项目ID列表
-                    Object cartItemIdsObj = payload.get("cartItemIds");
-                    if (cartItemIdsObj instanceof List) {
-                        cartItemIds = ((List<?>) cartItemIdsObj).stream()
-                                .map(item -> {
-                                    if (item instanceof Integer) {
-                                        return ((Integer) item).longValue();
-                                    } else if (item instanceof Long) {
-                                        return (Long) item;
-                                    } else if (item instanceof String) {
-                                        return Long.parseLong((String) item);
-                                    } else if (item instanceof Number) {
-                                        return ((Number) item).longValue();
-                                    }
-                                    return null;
-                                })
-                                .filter(id -> id != null)
-                                .collect(Collectors.toList());
+                orderItems = orderService.createDirectOrder(items);
+            } else {
+                // 处理从购物车结算的情况
+                List<Long> cartItemIds = null;
+                if (payload.containsKey("cartItemIds")) {
+                    try {
+                        Object cartItemIdsObj = payload.get("cartItemIds");
+                        if (cartItemIdsObj instanceof List) {
+                            cartItemIds = ((List<?>) cartItemIdsObj).stream()
+                                    .map(item -> {
+                                        if (item instanceof Integer) {
+                                            return ((Integer) item).longValue();
+                                        } else if (item instanceof Long) {
+                                            return (Long) item;
+                                        } else if (item instanceof String) {
+                                            return Long.parseLong((String) item);
+                                        } else if (item instanceof Number) {
+                                            return ((Number) item).longValue();
+                                        }
+                                        return null;
+                                    })
+                                    .filter(id -> id != null)
+                                    .collect(Collectors.toList());
+                        }
+                    } catch (Exception e) {
+                        response.put("success", false);
+                        response.put("message", "无效的购物车项ID");
+                        return ResponseEntity.badRequest().body(response);
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return ResponseEntity.badRequest()
-                            .body(Collections.emptyList());
                 }
-            }
 
-            // 检查cartItemIds是否为空，如果为空返回错误
-            if (cartItemIds == null || cartItemIds.isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(Collections.emptyList());
-            }
+                if (cartItemIds == null || cartItemIds.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "请选择要购买的商品");
+                    return ResponseEntity.badRequest().body(response);
+                }
 
-            return ResponseEntity.ok(orderService.createOrder(cartItemIds));
+                orderItems = orderService.createOrder(cartItemIds);
+            }
+            
+            response.put("success", true);
+            response.put("message", "订单创建成功");
+            response.put("data", orderItems);
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.emptyList());
+            response.put("success", false);
+            response.put("message", "创建订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 } 

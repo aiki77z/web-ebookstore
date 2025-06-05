@@ -1,55 +1,57 @@
-// 后端API基础URL
+// API基础URL
 const API_BASE_URL = 'http://localhost:8080/api';
 
-// 通用请求函数
-async function request(url, options = {}, retries = 1) {
+// 通用请求处理函数
+async function request(url, options = {}) {
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const defaultOptions = {
+      credentials: 'include', // 包含cookies
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
       },
+    };
+
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...defaultOptions,
       ...options,
     });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `请求失败：${response.status} ${response.statusText}`;
-      try {
-        // 尝试解析错误响应为JSON
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.message) {
-          errorMessage = errorJson.message;
-        }
-      } catch (e) {
-        // 如果不是JSON，使用原始错误文本
-        if (errorText) {
-          errorMessage += ` - ${errorText}`;
-        }
-      }
-      throw new Error(errorMessage);
-    }
-    
-    // 检查响应是否为空
-    const text = await response.text();
-    if (!text) {
-      return []; // 返回空数组而不是JSON.parse空字符串
-    }
-    
-    return JSON.parse(text);
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('API请求错误:', error);
-    
-    // 实现重试机制
-    if (retries > 0 && !url.includes('/orders/create')) {
-      console.log(`重试请求 ${url}，剩余重试次数: ${retries - 1}`);
-      return request(url, options, retries - 1);
-    }
-    
-    // 抛出一个更通用的错误，让调用者决定如何处理
+    console.error('API请求失败:', error);
     throw error;
   }
 }
+
+// 用户相关API
+export const userApi = {
+  // 登录
+  login: (credentials) => request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  }),
+
+  // 注册
+  register: (userData) => request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  }),
+
+  // 登出
+  logout: () => request('/auth/logout', {
+    method: 'POST',
+  }),
+
+  // 获取当前用户信息
+  getCurrentUser: () => request('/auth/current-user'),
+
+  // 更新用户信息
+  updateProfile: (userData) => request('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(userData),
+  }),
+};
 
 // 书籍相关API
 export const bookApi = {
@@ -67,48 +69,41 @@ export const bookApi = {
 export const cartApi = {
   // 获取购物车
   getCart: () => request('/cart'),
-  
-  // 添加商品到购物车
-  addToCart: (bookId, quantity) => request('/cart/add', {
+
+  // 添加到购物车
+  addToCart: (item) => request('/cart/add', {
     method: 'POST',
-    body: JSON.stringify({ bookId, quantity }),
+    body: JSON.stringify(item),
   }),
-  
-  // 从购物车移除商品
+
+  // 从购物车移除
   removeFromCart: (cartItemId) => request(`/cart/remove/${cartItemId}`, {
     method: 'DELETE',
   }),
-  
+
   // 更新购物车商品数量
-  updateCartItemQuantity: (cartItemId, quantity) => request('/cart/update', {
+  updateCartItemQuantity: (cartItemId, quantity) => request(`/cart/update/${cartItemId}`, {
     method: 'PUT',
-    body: JSON.stringify({ cartItemId, quantity }),
+    body: JSON.stringify({ quantity }),
   }),
 };
 
 // 订单相关API
 export const orderApi = {
-  // 获取所有订单
+  // 获取订单列表
   getOrders: () => request('/orders'),
-  
-  // 创建订单
-  createOrder: (data) => request('/orders/create', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  
-  // 获取订单详情
-  getOrderDetails: (orderId) => request(`/orders/${orderId}`),
-};
 
-// 用户相关API
-export const userApi = {
-  // 获取用户信息
-  getUserInfo: () => request('/user/info'),
-  
-  // 更新用户信息
-  updateUserInfo: (userData) => request('/user/update', {
-    method: 'PUT',
-    body: JSON.stringify(userData),
+  // 获取订单详情
+  getOrder: (orderId) => request(`/orders/${orderId}`),
+
+  // 创建订单
+  createOrder: (orderData) => request('/orders/create', {
+    method: 'POST',
+    body: JSON.stringify(orderData),
+  }),
+
+  // 取消订单
+  cancelOrder: (orderId) => request(`/orders/${orderId}/cancel`, {
+    method: 'POST',
   }),
 }; 

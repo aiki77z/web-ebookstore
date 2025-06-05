@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.math.BigDecimal;
 
+/**
+ * 订单商品项实体类
+ */
 @Entity
 @Table(name = "order_items")
 @Data
@@ -30,7 +33,7 @@ public class OrderItem {
     private Integer quantity;
     
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
+    private BigDecimal price; // 购买时的单价
     
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;

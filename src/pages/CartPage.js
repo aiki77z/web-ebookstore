@@ -1,35 +1,74 @@
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Table, Button, Space, Typography, Checkbox, Modal, Spin, Alert, Empty, message } from 'antd';
 import { CartContext } from '../contexts/CartContext';
 import { Link } from 'react-router-dom';
-import { orderApi } from '../services/api';
 
 const { Title } = Typography;
 
 export default function CartPage() {
   const {
-    cartItems,
+    cart,
     removeFromCart,
-    toggleSelect,
+    updateCartItemQuantity,
     loading,
-    error,
     fetchCart,
-    fetchOrders,
-    addOrder,
-    setCartItems
+    checkoutCart
   } = useContext(CartContext);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const selectedItems = cartItems.filter(item => item.selected);
-  const total = selectedItems.reduce(
-      (sum, item) => sum + item.price * item.quantity, 0
-  );
+  const [selectedItems, setSelectedItems] = useState([]);
 
   // 组件加载时获取购物车数据
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [fetchCart]);
+
+  // 计算总价
+  const total = selectedItems.reduce(
+    (sum, item) => sum + item.book.price * item.quantity, 0
+  );
+
+  // 切换选择状态
+  const toggleSelect = (itemId) => {
+    setSelectedItems(prev => {
+      const item = cart.find(cartItem => cartItem.id === itemId);
+      if (!item) return prev;
+
+      const isSelected = prev.some(selected => selected.id === itemId);
+      if (isSelected) {
+        return prev.filter(selected => selected.id !== itemId);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  // 更新数量
+  const handleUpdateQuantity = async (itemId, newQuantity) => {
+    try {
+      await updateCartItemQuantity(itemId, newQuantity);
+      // 更新选中项目的数量
+      setSelectedItems(prev => 
+        prev.map(item => 
+          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+    } catch (err) {
+      message.error('更新数量失败');
+    }
+  };
+
+  // 删除商品
+  const handleRemove = async (itemId) => {
+    try {
+      await removeFromCart(itemId);
+      setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+      message.success('商品已从购物车移除');
+    } catch (err) {
+      message.error('删除失败');
+    }
+  };
 
   const columns = useMemo(() => [
     {
@@ -37,35 +76,40 @@ export default function CartPage() {
       dataIndex: 'selected',
       key: 'selected',
       render: (_, record) => (
-          <Checkbox
-              checked={record.selected}
-              onChange={() => toggleSelect(record.id)}
-          />
+        <Checkbox
+          checked={selectedItems.some(item => item.id === record.id)}
+          onChange={() => toggleSelect(record.id)}
+        />
       ),
     },
     {
       title: '书籍封面',
-      dataIndex: 'cover',
+      dataIndex: ['book', 'cover'],
       key: 'cover',
       render: (cover) => (
-          <img
-              src={cover}
-              alt="书籍封面"
-              style={{ width: '60px', height: '80px', objectFit: 'cover' }}
-          />
+        <img
+          src={cover}
+          alt="书籍封面"
+          style={{ width: '60px', height: '80px', objectFit: 'cover' }}
+        />
       ),
     },
     {
       title: '书名',
-      dataIndex: 'title',
+      dataIndex: ['book', 'title'],
       key: 'title',
       render: (title, record) => (
-          <Link to={`/book/${record.bookId}`}>{title}</Link>
+        <Link to={`/book/${record.book.id}`}>{title}</Link>
       ),
     },
     {
+      title: '作者',
+      dataIndex: ['book', 'author'],
+      key: 'author',
+    },
+    {
       title: '单价',
-      dataIndex: 'price',
+      dataIndex: ['book', 'price'],
       key: 'price',
       render: (price) => `￥${price}`,
     },
@@ -73,28 +117,46 @@ export default function CartPage() {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
+      render: (quantity, record) => (
+        <Space>
+          <Button 
+            size="small" 
+            onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
+            disabled={quantity <= 1}
+          >
+            -
+          </Button>
+          <span>{quantity}</span>
+          <Button 
+            size="small" 
+            onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
+          >
+            +
+          </Button>
+        </Space>
+      ),
     },
     {
       title: '小计',
       key: 'subtotal',
-      render: (_, record) => `￥${(record.price * record.quantity).toFixed(2)}`,
+      render: (_, record) => `￥${(record.book.price * record.quantity).toFixed(2)}`,
     },
     {
       title: '操作',
       key: 'action',
       render: (_, record) => (
-          <Space size="middle">
-            <Button
-                type="link"
-                danger
-                onClick={() => removeFromCart(record.id)}
-            >
-              删除
-            </Button>
-          </Space>
+        <Space size="middle">
+          <Button
+            type="link"
+            danger
+            onClick={() => handleRemove(record.id)}
+          >
+            删除
+          </Button>
+        </Space>
       ),
     }
-  ], [toggleSelect, removeFromCart]);
+  ], [selectedItems]);
 
   const handleCheckout = async () => {
     if (selectedItems.length === 0) {
@@ -104,18 +166,9 @@ export default function CartPage() {
 
     try {
       setCheckoutLoading(true);
-
-      // 使用addOrder处理购物车项的购买
-      await addOrder(selectedItems);
-      
-      // 显示成功提示
+      await checkoutCart();
       setIsModalVisible(true);
-      
-      // 刷新购物车数据
-      await fetchCart();
-      
-      // 如果存在未完成的结算，确保本地UI被更新
-      setCartItems(prev => prev.filter(item => !selectedItems.some(selected => selected.id === item.id)));
+      setSelectedItems([]);
     } catch (err) {
       message.error('结算失败: ' + (err.message || '未知错误'));
       console.error('结算失败:', err);
@@ -131,69 +184,58 @@ export default function CartPage() {
   const renderContent = () => {
     if (loading) {
       return (
-          <div style={{ textAlign: 'center', margin: '50px 0' }}>
-            <Spin size="large" />
-          </div>
+        <div style={{ textAlign: 'center', margin: '50px 0' }}>
+          <Spin size="large" />
+        </div>
       );
     }
 
-    if (error && cartItems.length === 0) {
+    if (!cart || cart.length === 0) {
       return (
-          <Alert
-              message="获取购物车失败"
-              description={error}
-              type="error"
-              showIcon
-          />
-      );
-    }
-
-    if (cartItems.length === 0) {
-      return (
-          <Empty
-              description="购物车为空"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
+        <Empty
+          description="购物车为空"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       );
     }
 
     return (
-        <>
-          <Table
-              columns={columns}
-              dataSource={cartItems}
-              rowKey="id"
-              pagination={false}
-          />
-          <div style={{ textAlign: 'right', marginTop: '24px' }}>
-            <Title level={4}>总计：￥{total.toFixed(2)}</Title>
-            <Button
-                type="primary"
-                size="large"
-                onClick={handleCheckout}
-                disabled={selectedItems.length === 0}
-                loading={checkoutLoading}
-            >
-              结算
-            </Button>
-          </div>
-        </>
+      <>
+        <Table
+          columns={columns}
+          dataSource={cart}
+          rowKey="id"
+          pagination={false}
+        />
+        <div style={{ textAlign: 'right', marginTop: '24px' }}>
+          <Title level={4}>总计：￥{total.toFixed(2)}</Title>
+          <Button
+            type="primary"
+            size="large"
+            onClick={handleCheckout}
+            disabled={selectedItems.length === 0}
+            loading={checkoutLoading}
+          >
+            结算
+          </Button>
+        </div>
+      </>
     );
   };
 
   return (
-      <div style={{ padding: '24px' }}>
-        <Title level={2}>购物车</Title>
-        {renderContent()}
+    <div style={{ padding: '24px' }}>
+      <Title level={2}>购物车</Title>
+      {renderContent()}
 
-        <Modal
-            title="购买成功"
-            visible={isModalVisible}
-            onOk={handleOk}
-            onCancel={() => setIsModalVisible(false)}
-        >
-          <p>购买成功！</p>
-        </Modal>
-      </div>
+      <Modal
+        title="购买成功"
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={() => setIsModalVisible(false)}
+      >
+        <p>购买成功！</p>
+      </Modal>
+    </div>
   );
 }

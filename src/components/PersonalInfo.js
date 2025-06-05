@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Row, Col, Card, message, Spin } from 'antd';
+import authService from '../services/authService';
 import { userApi } from '../services/api';
 
 export default function PersonalInfo() {
@@ -12,30 +13,42 @@ export default function PersonalInfo() {
     fetchUserInfo();
   }, []);
 
-  // 从API获取用户信息
+  // 从当前登录用户获取信息
   const fetchUserInfo = async () => {
     try {
       setLoading(true);
-      const data = await userApi.getUserInfo();
       
-      // 设置表单初始值
-      form.setFieldsValue({
-        name: data.name,
-        email: data.email,
-        address: data.address
-      });
+      // 先尝试从后端获取用户信息
+      try {
+        const userInfo = await userApi.getUserInfo();
+        if (userInfo) {
+          form.setFieldsValue({
+            name: userInfo.name,
+            email: userInfo.email,
+            address: userInfo.address,
+            username: authService.getCurrentUser()?.username || ''
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn('从后端获取用户信息失败，使用本地信息:', err);
+      }
+      
+      // 如果后端失败，使用本地存储的用户信息
+      const localUserInfo = authService.getCurrentUser();
+      if (localUserInfo) {
+        form.setFieldsValue({
+          name: localUserInfo.name,
+          email: localUserInfo.email,
+          address: localUserInfo.address,
+          username: localUserInfo.username
+        });
+      } else {
+        message.error('获取用户信息失败');
+      }
     } catch (err) {
       console.error('获取用户信息失败:', err);
-      message.error('获取用户信息失败，将使用默认数据');
-      
-      // 使用本地数据作为备份
-      import('../data').then(({ userInfo }) => {
-        form.setFieldsValue({
-          name: userInfo.name,
-          email: userInfo.email,
-          address: userInfo.address
-        });
-      });
+      message.error('获取用户信息失败');
     } finally {
       setLoading(false);
     }
@@ -45,11 +58,36 @@ export default function PersonalInfo() {
   const onFinish = async (values) => {
     try {
       setSubmitting(true);
-      await userApi.updateUserInfo(values);
-      message.success('保存成功');
+      
+      // 调用后端API更新用户信息
+      const updatedUserInfo = await userApi.updateUserInfo({
+        name: values.name,
+        email: values.email,
+        address: values.address
+      });
+      
+      if (updatedUserInfo) {
+        // 更新本地存储的用户信息
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          authService.setCurrentUser({
+            ...currentUser,
+            name: updatedUserInfo.name,
+            email: updatedUserInfo.email,
+            address: updatedUserInfo.address
+          });
+        }
+        
+        message.success('用户信息更新成功');
+        
+        // 重新获取用户信息以确保数据同步
+        await fetchUserInfo();
+      } else {
+        throw new Error('更新用户信息返回空数据');
+      }
     } catch (err) {
       console.error('保存用户信息失败:', err);
-      message.error('保存失败，请稍后再试');
+      message.error('保存失败: ' + (err.message || '请稍后再试'));
     } finally {
       setSubmitting(false);
     }
@@ -70,23 +108,33 @@ export default function PersonalInfo() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <h2 style={{ marginBottom: '24px' }}>My Profile</h2>
+      <h2 style={{ marginBottom: '24px' }}>个人信息</h2>
       <Form
         form={form}
         onFinish={onFinish}
         layout="vertical"
       >
-        <Card title="User Info" bordered={false} style={{ marginBottom: '24px' }}>
+        <Card title="基本信息" bordered={false} style={{ marginBottom: '24px' }}>
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item
-                name="name"
+                name="username"
                 label="用户名"
-                rules={[{ required: true, message: '请输入用户名' }]}
               >
-                <Input placeholder="用户名" />
+                <Input placeholder="用户名" disabled />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="姓名"
+                rules={[{ required: true, message: '请输入姓名' }]}
+              >
+                <Input placeholder="姓名" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={24}>
             <Col span={12}>
               <Form.Item
                 name="email"
@@ -102,7 +150,7 @@ export default function PersonalInfo() {
           </Row>
         </Card>
 
-        <Card title="Address" bordered={false} style={{ marginBottom: '24px' }}>
+        <Card title="地址信息" bordered={false} style={{ marginBottom: '24px' }}>
           <Form.Item 
             name="address"
             label="地址"
@@ -114,11 +162,11 @@ export default function PersonalInfo() {
 
         <Row justify="end" gutter={16}>
           <Col>
-            <Button onClick={handleCancel}>Cancel</Button>
+            <Button onClick={handleCancel}>取消</Button>
           </Col>
           <Col>
             <Button type="primary" htmlType="submit" loading={submitting}>
-              Save
+              保存
             </Button>
           </Col>
         </Row>

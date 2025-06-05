@@ -20,9 +20,14 @@ export default function Home() {
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const data = await bookApi.getBooks();
-      setDisplayBooks(data);
-      setError(null);
+      const response = await bookApi.getBooks();
+      
+      if (response && response.success) {
+        setDisplayBooks(response.data || []);
+        setError(null);
+      } else {
+        throw new Error(response.message || '获取书籍数据失败');
+      }
     } catch (err) {
       console.error('获取书籍失败:', err);
       setError('获取书籍数据失败，请稍后再试');
@@ -44,9 +49,14 @@ export default function Home() {
 
     try {
       setLoading(true);
-      const data = await bookApi.searchBooks(value);
-      setDisplayBooks(data);
-      setError(null);
+      const response = await bookApi.searchBooks(value);
+      
+      if (response && response.success) {
+        setDisplayBooks(response.data || []);
+        setError(null);
+      } else {
+        throw new Error(response.message || '搜索书籍失败');
+      }
     } catch (err) {
       console.error('搜索书籍失败:', err);
       setError('搜索书籍失败，请稍后再试');
@@ -99,7 +109,7 @@ export default function Home() {
         <Row gutter={[24, 24]}>
           {displayBooks.length > 0 ? (
             displayBooks.map(book => (
-              <Col span={6} key={book.id}>
+              <Col xs={24} sm={12} md={8} lg={6} key={book.id}>
                 <BookCard book={book} />
               </Col>
             ))
