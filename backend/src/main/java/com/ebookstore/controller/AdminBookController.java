@@ -16,7 +16,7 @@ import java.util.Map;
  * 实现管理员对书籍的增删改查功能
  */
 @RestController
-@RequestMapping("/admin/books")
+@RequestMapping("/api/admin/books")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AdminBookController {
     

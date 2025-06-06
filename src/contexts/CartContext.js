@@ -136,16 +136,21 @@ export function CartProvider({ children }) {
     }
   }, [fetchOrders]);
 
-  // 从购物车结算
-  const checkoutCart = useCallback(async () => {
+  // 从购物车结算选中的商品
+  const checkoutCart = useCallback(async (selectedItems) => {
     try {
       setLoading(true);
+      
+      if (!selectedItems || selectedItems.length === 0) {
+        throw new Error('请选择要购买的商品');
+      }
+
+      // 使用购物车项ID来创建订单
+      const cartItemIds = selectedItems.map(item => item.id);
+      
       const response = await orderApi.createOrder({
         directBuy: false,
-        items: cart.map(item => ({
-          bookId: item.book.id,
-          quantity: item.quantity
-        }))
+        cartItemIds: cartItemIds
       });
       
       if (response && response.success) {
@@ -163,7 +168,7 @@ export function CartProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [cart, fetchCart, fetchOrders]);
+  }, [fetchCart, fetchOrders]);
 
   // 初始化时获取购物车和订单数据
   useEffect(() => {

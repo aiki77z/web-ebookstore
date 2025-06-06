@@ -44,6 +44,15 @@ export default function CartPage() {
     });
   };
 
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedItems.length === cart.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems([...cart]);
+    }
+  };
+
   // 更新数量
   const handleUpdateQuantity = async (itemId, newQuantity) => {
     try {
@@ -72,7 +81,15 @@ export default function CartPage() {
 
   const columns = useMemo(() => [
     {
-      title: '选择',
+      title: (
+        <Checkbox
+          checked={selectedItems.length === cart.length && cart.length > 0}
+          indeterminate={selectedItems.length > 0 && selectedItems.length < cart.length}
+          onChange={toggleSelectAll}
+        >
+          全选
+        </Checkbox>
+      ),
       dataIndex: 'selected',
       key: 'selected',
       render: (_, record) => (
@@ -156,7 +173,7 @@ export default function CartPage() {
         </Space>
       ),
     }
-  ], [selectedItems]);
+  ], [selectedItems, cart]);
 
   const handleCheckout = async () => {
     if (selectedItems.length === 0) {
@@ -166,9 +183,10 @@ export default function CartPage() {
 
     try {
       setCheckoutLoading(true);
-      await checkoutCart();
+      await checkoutCart(selectedItems);
       setIsModalVisible(true);
       setSelectedItems([]);
+      message.success('结算成功！');
     } catch (err) {
       message.error('结算失败: ' + (err.message || '未知错误'));
       console.error('结算失败:', err);
@@ -208,16 +226,19 @@ export default function CartPage() {
           pagination={false}
         />
         <div style={{ textAlign: 'right', marginTop: '24px' }}>
-          <Title level={4}>总计：￥{total.toFixed(2)}</Title>
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleCheckout}
-            disabled={selectedItems.length === 0}
-            loading={checkoutLoading}
-          >
-            结算
-          </Button>
+          <Space>
+            <span>已选择 {selectedItems.length} 件商品</span>
+            <Title level={4} style={{ margin: 0 }}>总计：￥{total.toFixed(2)}</Title>
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleCheckout}
+              disabled={selectedItems.length === 0}
+              loading={checkoutLoading}
+            >
+              结算({selectedItems.length})
+            </Button>
+          </Space>
         </div>
       </>
     );
@@ -234,7 +255,7 @@ export default function CartPage() {
         onOk={handleOk}
         onCancel={() => setIsModalVisible(false)}
       >
-        <p>购买成功！</p>
+        <p>购买成功！商品已添加到订单列表。</p>
       </Modal>
     </div>
   );
