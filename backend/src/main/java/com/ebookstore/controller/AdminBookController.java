@@ -3,6 +3,8 @@ package com.ebookstore.controller;
 import com.ebookstore.entity.Book;
 import com.ebookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,20 +34,16 @@ public class AdminBookController {
             @RequestParam(defaultValue = "10") int size) {
         
         try {
-            List<Book> books = bookService.getAllBooksForAdmin();
-            
-            // 简单分页实现
-            int start = page * size;
-            int end = Math.min(start + size, books.size());
-            
-            List<Book> pagedBooks = books.subList(start, end);
+            PageRequest pageRequest = PageRequest.of(page, size);
+            Page<Book> bookPage = bookService.getAllBooksForAdmin(pageRequest);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("data", pagedBooks);
-            response.put("total", books.size());
+            response.put("data", bookPage.getContent());
+            response.put("total", bookPage.getTotalElements());
             response.put("page", page);
             response.put("size", size);
+            response.put("totalPages", bookPage.getTotalPages());
             
             return ResponseEntity.ok(response);
             

@@ -22,18 +22,29 @@ const AdminBookPage = () => {
     const [editingBook, setEditingBook] = useState(null);
     const [form] = Form.useForm();
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0
+    });
 
     // 获取书籍列表
-    const fetchBooks = async () => {
+    const fetchBooks = async (page = pagination.current, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/books`, {
+            const response = await fetch(`${API_BASE_URL}/admin/books?page=${page - 1}&size=${pageSize}`, {
                 credentials: 'include'
             });
             const result = await response.json();
             
             if (result.success) {
                 setBooks(result.data);
+                setPagination({
+                    ...pagination,
+                    current: page,
+                    pageSize: pageSize,
+                    total: result.total
+                });
             } else {
                 message.error(result.message || '获取书籍列表失败');
             }
@@ -61,6 +72,10 @@ const AdminBookPage = () => {
             
             if (result.success) {
                 setBooks(result.data);
+                setPagination({
+                    ...pagination,
+                    total: result.data.length
+                });
             } else {
                 message.error(result.message || '搜索失败');
             }
@@ -70,6 +85,11 @@ const AdminBookPage = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // 处理分页变化
+    const handleTableChange = (newPagination, filters, sorter) => {
+        fetchBooks(newPagination.current, newPagination.pageSize);
     };
 
     // 添加或更新书籍
@@ -254,10 +274,12 @@ const AdminBookPage = () => {
                 rowKey="id"
                 loading={loading}
                 pagination={{
+                    ...pagination,
                     showSizeChanger: true,
                     showQuickJumper: true,
                     showTotal: (total) => `共 ${total} 本书籍`,
                 }}
+                onChange={handleTableChange}
             />
 
             <Modal

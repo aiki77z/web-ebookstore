@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Table, Button, Space, Typography, Checkbox, Modal, Spin, Alert, Empty, message } from 'antd';
+import { Table, Button, Space, Typography, Checkbox, Modal, Spin, Alert, Empty, message, Tag } from 'antd';
 import { CartContext } from '../contexts/CartContext';
 import { Link } from 'react-router-dom';
 
@@ -29,12 +29,15 @@ export default function CartPage() {
     (sum, item) => sum + item.book.price * item.quantity, 0
   );
 
+  // 检查商品是否可选择（非售罄状态）
+  const isItemSelectable = (item) => item.book.status !== 'OUT_OF_STOCK';
+
   // 切换选择状态
   const toggleSelect = (itemId) => {
-    setSelectedItems(prev => {
-      const item = cart.find(cartItem => cartItem.id === itemId);
-      if (!item) return prev;
+    const item = cart.find(cartItem => cartItem.id === itemId);
+    if (!item || !isItemSelectable(item)) return;
 
+    setSelectedItems(prev => {
       const isSelected = prev.some(selected => selected.id === itemId);
       if (isSelected) {
         return prev.filter(selected => selected.id !== itemId);
@@ -46,15 +49,19 @@ export default function CartPage() {
 
   // 全选/取消全选
   const toggleSelectAll = () => {
-    if (selectedItems.length === cart.length) {
+    const selectableItems = cart.filter(isItemSelectable);
+    if (selectedItems.length === selectableItems.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems([...cart]);
+      setSelectedItems(selectableItems);
     }
   };
 
   // 更新数量
   const handleUpdateQuantity = async (itemId, newQuantity) => {
+    const item = cart.find(cartItem => cartItem.id === itemId);
+    if (!item || !isItemSelectable(item)) return;
+
     try {
       await updateCartItemQuantity(itemId, newQuantity);
       // 更新选中项目的数量
@@ -83,8 +90,8 @@ export default function CartPage() {
     {
       title: (
         <Checkbox
-          checked={selectedItems.length === cart.length && cart.length > 0}
-          indeterminate={selectedItems.length > 0 && selectedItems.length < cart.length}
+          checked={selectedItems.length === cart.filter(isItemSelectable).length && cart.some(isItemSelectable)}
+          indeterminate={selectedItems.length > 0 && selectedItems.length < cart.filter(isItemSelectable).length}
           onChange={toggleSelectAll}
         >
           全选
@@ -96,6 +103,7 @@ export default function CartPage() {
         <Checkbox
           checked={selectedItems.some(item => item.id === record.id)}
           onChange={() => toggleSelect(record.id)}
+          disabled={!isItemSelectable(record)}
         />
       ),
     },
@@ -103,12 +111,29 @@ export default function CartPage() {
       title: '书籍封面',
       dataIndex: ['book', 'cover'],
       key: 'cover',
-      render: (cover) => (
-        <img
-          src={cover}
-          alt="书籍封面"
-          style={{ width: '60px', height: '80px', objectFit: 'cover' }}
-        />
+      render: (cover, record) => (
+        <div style={{ position: 'relative' }}>
+          <img
+            src={cover}
+            alt="书籍封面"
+            style={{ 
+              width: '60px', 
+              height: '80px', 
+              objectFit: 'cover',
+              opacity: !isItemSelectable(record) ? 0.5 : 1
+            }}
+          />
+          {!isItemSelectable(record) && (
+            <Tag color="error" style={{
+              position: 'absolute',
+              top: '0',
+              right: '0',
+              fontSize: '12px'
+            }}>
+              售罄
+            </Tag>
+          )}
+        </div>
       ),
     },
     {
@@ -116,19 +141,33 @@ export default function CartPage() {
       dataIndex: ['book', 'title'],
       key: 'title',
       render: (title, record) => (
-        <Link to={`/book/${record.book.id}`}>{title}</Link>
+        <Link 
+          to={`/book/${record.book.id}`}
+          style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}
+        >
+          {title}
+        </Link>
       ),
     },
     {
       title: '作者',
       dataIndex: ['book', 'author'],
       key: 'author',
+      render: (author, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          {author}
+        </span>
+      ),
     },
     {
       title: '单价',
       dataIndex: ['book', 'price'],
       key: 'price',
-      render: (price) => `￥${price}`,
+      render: (price, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          ￥{price}
+        </span>
+      ),
     },
     {
       title: '数量',
@@ -139,14 +178,17 @@ export default function CartPage() {
           <Button 
             size="small" 
             onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
-            disabled={quantity <= 1}
+            disabled={quantity <= 1 || !isItemSelectable(record)}
           >
             -
           </Button>
-          <span>{quantity}</span>
+          <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+            {quantity}
+          </span>
           <Button 
             size="small" 
             onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
+            disabled={!isItemSelectable(record)}
           >
             +
           </Button>
@@ -156,7 +198,11 @@ export default function CartPage() {
     {
       title: '小计',
       key: 'subtotal',
-      render: (_, record) => `￥${(record.book.price * record.quantity).toFixed(2)}`,
+      render: (_, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          ￥{(record.book.price * record.quantity).toFixed(2)}
+        </span>
+      ),
     },
     {
       title: '操作',

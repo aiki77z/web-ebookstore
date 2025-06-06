@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../contexts/CartContext';
-import {Row, Col, Button, InputNumber, Descriptions, Modal, Spin, Alert, message} from 'antd';
+import {Row, Col, Button, InputNumber, Descriptions, Modal, Spin, Alert, message, Tag} from 'antd';
 import {bookApi} from '../services/api';
 
 export default function BookDetailPage() {
@@ -84,6 +84,9 @@ export default function BookDetailPage() {
     navigate('/');
   };
 
+  // 检查是否售罄
+  const isOutOfStock = book?.status === 'OUT_OF_STOCK';
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', margin: '100px 0' }}>
@@ -123,18 +126,46 @@ export default function BookDetailPage() {
               width: '100%',
               maxHeight: '500px',
               objectFit: 'contain',
-              border: '1px solid #f0f0f0'
+              border: '1px solid #f0f0f0',
+              opacity: isOutOfStock ? 0.5 : 1
             }}
           />
+          {isOutOfStock && (
+            <Tag color="error" style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              fontSize: '14px'
+            }}>
+              售罄
+            </Tag>
+          )}
         </Col>
         <Col span={12}>
-          <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>{book.title}</h1>
-          <p style={{ color: '#666', marginBottom: '24px' }}>{book.description}</p>
+          <h1 style={{ 
+            fontSize: '24px', 
+            marginBottom: '16px',
+            color: isOutOfStock ? '#999' : 'inherit'
+          }}>
+            {book.title}
+          </h1>
+          <p style={{ 
+            color: isOutOfStock ? '#999' : '#666', 
+            marginBottom: '24px' 
+          }}>
+            {book.description}
+          </p>
 
           <Descriptions bordered column={1}>
             <Descriptions.Item label="作者">{book.author}</Descriptions.Item>
             <Descriptions.Item label="价格">￥{book.price}</Descriptions.Item>
-            {book.status && <Descriptions.Item label="库存">{book.status}</Descriptions.Item>}
+            <Descriptions.Item label="库存状态">
+              {isOutOfStock ? (
+                <Tag color="error">售罄</Tag>
+              ) : (
+                <Tag color="success">有库存</Tag>
+              )}
+            </Descriptions.Item>
           </Descriptions>
 
           <div style={{ margin: '24px 0' }}>
@@ -144,6 +175,7 @@ export default function BookDetailPage() {
               value={quantity}
               onChange={setQuantity}
               style={{ width: '100px' }}
+              disabled={isOutOfStock}
             />
           </div>
 
@@ -154,6 +186,8 @@ export default function BookDetailPage() {
               style={{ marginRight: '16px' }}
               onClick={handleAddToCart}
               loading={loading}
+              disabled={isOutOfStock}
+              title={isOutOfStock ? "商品已售罄" : ""}
             >
               加入购物车
             </Button>
@@ -163,6 +197,8 @@ export default function BookDetailPage() {
               danger
               onClick={handleBuyNow}
               loading={loading}
+              disabled={isOutOfStock}
+              title={isOutOfStock ? "商品已售罄" : ""}
             >
               立即购买
             </Button>

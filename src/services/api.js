@@ -46,8 +46,11 @@ export const userApi = {
   // 获取当前用户信息
   getCurrentUser: () => request('/auth/current-user'),
 
+  // 获取用户详细信息
+  getUserInfo: () => request('/user/info'),
+
   // 更新用户信息
-  updateProfile: (userData) => request('/auth/profile', {
+  updateUserInfo: (userData) => request('/user/update', {
     method: 'PUT',
     body: JSON.stringify(userData),
   }),

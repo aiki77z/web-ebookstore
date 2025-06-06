@@ -2,6 +2,8 @@ package com.ebookstore.service;
 
 import com.ebookstore.dto.BookDTO;
 import com.ebookstore.entity.Book;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -23,7 +25,7 @@ public interface BookService {
     
     void deleteBook(Long id);
     
-    List<Book> getAllBooksForAdmin();
+    Page<Book> getAllBooksForAdmin(Pageable pageable);
     
     Book getBookEntityById(Long id);
     

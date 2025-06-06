@@ -6,8 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class UserController {
     
@@ -15,12 +18,41 @@ public class UserController {
     private UserService userService;
     
     @GetMapping("/info")
-    public ResponseEntity<UserDTO> getUserInfo() {
-        return ResponseEntity.ok(userService.getUserInfo());
+    public ResponseEntity<Map<String, Object>> getUserInfo() {
+        try {
+            UserDTO userInfo = userService.getUserInfo();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", userInfo);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "获取用户信息失败：" + e.getMessage());
+            
+            return ResponseEntity.ok(response);
+        }
     }
     
     @PutMapping("/update")
-    public ResponseEntity<UserDTO> updateUserInfo(@RequestBody UserDTO userDTO) {
-        return ResponseEntity.ok(userService.updateUserInfo(userDTO));
+    public ResponseEntity<Map<String, Object>> updateUserInfo(@RequestBody UserDTO userDTO) {
+        try {
+            UserDTO updatedUser = userService.updateUserInfo(userDTO);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", updatedUser);
+            response.put("message", "用户信息更新成功");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "更新用户信息失败：" + e.getMessage());
+            
+            return ResponseEntity.ok(response);
+        }
     }
 } 
