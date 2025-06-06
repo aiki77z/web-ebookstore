@@ -94,6 +94,7 @@ public class OrderServiceImpl implements OrderService {
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("COMPLETED"); // 直接设置为已完成状态
+        order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址
         
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -168,6 +169,7 @@ public class OrderServiceImpl implements OrderService {
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("COMPLETED");
+        order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址
 
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;

@@ -2,6 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { Table, Typography, Empty, Spin, Alert } from 'antd';
 import { CartContext } from '../contexts/CartContext';
 import { Link } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
@@ -16,9 +17,12 @@ export default function OrderPage() {
   const columns = [
     {
       title: '订单日期',
-      dataIndex: 'orderDate',
-      key: 'orderDate',
-      render: (orderDate) => orderDate || '-'
+      dataIndex: 'date',
+      key: 'date',
+      render: (date) => {
+        if (!date) return '-';
+        return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
+      }
     },
     {
       title: '书籍名称',
