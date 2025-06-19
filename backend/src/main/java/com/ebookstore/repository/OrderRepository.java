@@ -21,6 +21,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     List<Order> findByUserAndOrderDateBetween(User user, LocalDateTime startDate, LocalDateTime endDate);
     
+    // 管理员查看所有订单，按日期降序排列
+    List<Order> findAllByOrderByOrderDateDesc();
+    
     @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi WHERE o.user = :user AND " +
            "(LOWER(oi.book.title) LIKE LOWER(CONCAT('%', :bookName, '%')) OR :bookName IS NULL) AND " +
            "(o.orderDate BETWEEN :startDate AND :endDate OR (:startDate IS NULL AND :endDate IS NULL))")
@@ -32,7 +35,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT DISTINCT o FROM Order o JOIN o.orderItems oi WHERE " +
            "(LOWER(oi.book.title) LIKE LOWER(CONCAT('%', :bookName, '%')) OR :bookName IS NULL) AND " +
-           "(o.orderDate BETWEEN :startDate AND :endDate OR (:startDate IS NULL AND :endDate IS NULL))")
+           "(o.orderDate BETWEEN :startDate AND :endDate OR (:startDate IS NULL AND :endDate IS NULL)) " +
+           "ORDER BY o.orderDate DESC")
     List<Order> findByBookNameAndDateRange(
             @Param("bookName") String bookName,
             @Param("startDate") LocalDateTime startDate,

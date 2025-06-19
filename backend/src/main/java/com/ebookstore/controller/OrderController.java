@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -52,6 +54,115 @@ public class OrderController {
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "获取订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+    
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchOrders(
+            @RequestParam(required = false) String bookName,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+
+            LocalDateTime start = null;
+            LocalDateTime end = null;
+            
+            if (startDate != null && !startDate.isEmpty()) {
+                start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+
+            List<OrderDTO> orders = orderService.searchUserOrders(bookName, start, end);
+            response.put("success", true);
+            response.put("data", orders);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "搜索订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<Map<String, Object>> getAllOrdersForAdmin(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+
+            if (!"ADMIN".equals(currentUser.getRole())) {
+                response.put("success", false);
+                response.put("message", "权限不足");
+                return ResponseEntity.status(403).body(response);
+            }
+
+            List<OrderDTO> orders = orderService.getAllOrders();
+            response.put("success", true);
+            response.put("data", orders);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "获取所有订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/admin/search")
+    public ResponseEntity<Map<String, Object>> searchAllOrdersForAdmin(
+            @RequestParam(required = false) String bookName,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+
+            if (!"ADMIN".equals(currentUser.getRole())) {
+                response.put("success", false);
+                response.put("message", "权限不足");
+                return ResponseEntity.status(403).body(response);
+            }
+
+            LocalDateTime start = null;
+            LocalDateTime end = null;
+            
+            if (startDate != null && !startDate.isEmpty()) {
+                start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                end = LocalDateTime.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+
+            List<OrderDTO> orders = orderService.searchAllOrders(bookName, start, end);
+            response.put("success", true);
+            response.put("data", orders);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "搜索所有订单失败：" + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }

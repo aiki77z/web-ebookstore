@@ -2,6 +2,7 @@ package com.ebookstore.service.impl;
 
 import com.ebookstore.dto.OrderDTO;
 import com.ebookstore.dto.OrderItemDTO;
+import com.ebookstore.dto.UserInfoDTO;
 import com.ebookstore.entity.CartItem;
 import com.ebookstore.entity.Order;
 import com.ebookstore.entity.OrderItem;
@@ -148,12 +149,24 @@ public class OrderServiceImpl implements OrderService {
     }
     
     private OrderDTO convertToOrderDTO(Order order) {
+        UserInfoDTO userDto = new UserInfoDTO(
+                order.getUser().getId(),
+                order.getUser().getUserAuth().getUsername(),
+                order.getUser().getName(),
+                order.getUser().getEmail(),
+                order.getUser().getUserAuth().getRole(),
+                order.getUser().getPhone(),
+                order.getUser().getAddress()
+        );
+        
         return new OrderDTO(
                 order.getId(),
                 order.getOrderDate(),
                 order.getTotalAmount(),
                 order.getStatus(),
-                order.getItems().stream()
+                order.getShippingAddress(),
+                userDto,
+                order.getOrderItems().stream()
                         .map(this::convertToDTO)
                         .collect(Collectors.toList())
         );
@@ -207,5 +220,35 @@ public class OrderServiceImpl implements OrderService {
             e.printStackTrace();
             throw new RuntimeException("创建直接订单失败", e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDTO> searchUserOrders(String bookName, LocalDateTime startDate, LocalDateTime endDate) {
+        User user = userService.getCurrentUser();
+        List<Order> orders = orderRepository.findByUserAndBookNameAndDateRange(
+                user, bookName, startDate, endDate);
+        return orders.stream()
+                .map(this::convertToOrderDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getAllOrders() {
+        List<Order> orders = orderRepository.findAllByOrderByOrderDateDesc();
+        return orders.stream()
+                .map(this::convertToOrderDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDTO> searchAllOrders(String bookName, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Order> orders = orderRepository.findByBookNameAndDateRange(
+                bookName, startDate, endDate);
+        return orders.stream()
+                .map(this::convertToOrderDTO)
+                .collect(Collectors.toList());
     }
 } 

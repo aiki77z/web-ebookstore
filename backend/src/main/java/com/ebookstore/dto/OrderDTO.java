@@ -16,5 +16,16 @@ public class OrderDTO {
     private LocalDateTime orderDate;
     private BigDecimal totalAmount;
     private String status;
-    private List<OrderItemDTO> items;
+    private String shippingAddress;
+    private UserInfoDTO user;
+    private List<OrderItemDTO> orderItems;
+    
+    // 构造函数用于简单订单信息（用户查看自己的订单时）
+    public OrderDTO(Long id, LocalDateTime orderDate, BigDecimal totalAmount, String status, List<OrderItemDTO> orderItems) {
+        this.id = id;
+        this.orderDate = orderDate;
+        this.totalAmount = totalAmount;
+        this.status = status;
+        this.orderItems = orderItems;
+    }
 } 

@@ -14,6 +14,7 @@ import PersonalPage from './pages/PersonalPage';
 import OrderPage from './pages/OrderPage';
 import AdminBookPage from './pages/AdminBookPage';
 import AdminUserPage from './pages/AdminUserPage';
+import AdminOrderPage from './pages/AdminOrderPage';
 
 // 受保护的布局组件
 const ProtectedLayout = ({ children, requireAdmin = false }) => (
@@ -46,6 +47,7 @@ function App() {
               {/* 管理员专用路由 */}
               <Route path="/admin/books" element={<ProtectedLayout requireAdmin={true}><AdminBookPage /></ProtectedLayout>} />
               <Route path="/admin/users" element={<ProtectedLayout requireAdmin={true}><AdminUserPage /></ProtectedLayout>} />
+              <Route path="/admin/orders" element={<ProtectedLayout requireAdmin={true}><AdminOrderPage /></ProtectedLayout>} />
               
               {/* 404页面 */}
               <Route path="*" element={

@@ -99,6 +99,29 @@ export const orderApi = {
   // 获取订单详情
   getOrder: (orderId) => request(`/orders/${orderId}`),
 
+  // 搜索用户订单
+  searchOrders: (params) => {
+    const queryParams = new URLSearchParams();
+    if (params.bookName) queryParams.append('bookName', params.bookName);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    
+    return request(`/orders/search?${queryParams.toString()}`);
+  },
+
+  // 管理员获取所有订单
+  getAllOrdersForAdmin: () => request('/orders/admin/all'),
+
+  // 管理员搜索所有订单
+  searchAllOrdersForAdmin: (params) => {
+    const queryParams = new URLSearchParams();
+    if (params.bookName) queryParams.append('bookName', params.bookName);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    
+    return request(`/orders/admin/search?${queryParams.toString()}`);
+  },
+
   // 创建订单
   createOrder: (orderData) => request('/orders/create', {
     method: 'POST',
