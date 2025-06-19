@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * 购物车服务实现类
  */
 @Service
-public class CartServiceImpl implements CartService {
+public class CartServiceImpl implements CartService {//多个repository协同操作数据库
     
     @Autowired
     private CartItemRepository cartItemRepository;

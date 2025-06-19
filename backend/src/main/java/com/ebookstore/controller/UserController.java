@@ -20,7 +20,7 @@ public class UserController {
     @GetMapping("/info")
     public ResponseEntity<Map<String, Object>> getUserInfo() {
         try {
-            UserDTO userInfo = userService.getUserInfo();
+            UserDTO userInfo = userService.getUserInfo();//函数依赖 获取用户信息
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -36,10 +36,10 @@ public class UserController {
         }
     }
     
-    @PutMapping("/update")
+    @PutMapping("/update")//更新用户信息 请求json->UserDTO->User实体->UserDTO->响应json
     public ResponseEntity<Map<String, Object>> updateUserInfo(@RequestBody UserDTO userDTO) {
         try {
-            UserDTO updatedUser = userService.updateUserInfo(userDTO);
+            UserDTO updatedUser = userService.updateUserInfo(userDTO);//函数依赖 更新用户信息
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

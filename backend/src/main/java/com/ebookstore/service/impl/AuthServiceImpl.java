@@ -23,10 +23,10 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
     
     @Autowired
-    private UserAuthDao userAuthDao;
+    private UserAuthDao userAuthDao;//依赖注入：自动注入UserAuthDao实例 业务逻辑交给
     
     @Autowired
-    private UserDao userDao;
+    private UserDao userDao;//依赖注入：自动注入UserDao实例 业务逻辑交给
     
     // BCrypt密码编码器，确保密码安全
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -35,13 +35,15 @@ public class AuthServiceImpl implements AuthService {
     private static final String SESSION_USER_KEY = "currentUser";
     
     @Override
-    @Transactional
+    @Transactional//标记为需要事务管理的操作
     public LoginResponseDTO login(LoginDTO loginDTO, HttpSession session) {
         System.out.println("开始登录处理，用户名: " + loginDTO.getUsername());
         
         try {
             // 根据用户名查找认证信息
             Optional<UserAuth> userAuthOpt = userAuthDao.findByUsername(loginDTO.getUsername());
+
+            //日志debug用
             
             if (!userAuthOpt.isPresent()) {
                 System.out.println("用户不存在: " + loginDTO.getUsername());
@@ -55,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
             System.out.println("验证密码，输入密码: " + loginDTO.getPassword());
             System.out.println("数据库密码哈希: " + userAuth.getPasswordHash());
             
-            boolean passwordMatches = validatePassword(loginDTO.getPassword(), userAuth.getPasswordHash());
+            boolean passwordMatches = validatePassword(loginDTO.getPassword(), userAuth.getPasswordHash());//验证密码
             System.out.println("密码验证结果: " + passwordMatches);
             
             if (!passwordMatches) {
@@ -65,8 +67,8 @@ public class AuthServiceImpl implements AuthService {
             
             // 检查账户是否激活
             if (!userAuth.getActive()) {
-                System.out.println("账户未激活");
-                return LoginResponseDTO.failure("账户已被禁用");
+                System.out.println("账户已被禁用");
+                return LoginResponseDTO.failure("您的账号已被禁用");
             }
             
             // 更新最后登录时间
@@ -78,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
             UserInfoDTO userInfo = buildUserInfoDTO(userAuth);
             System.out.println("构建用户信息完成: " + userInfo.getUsername());
             
-            // 将用户信息存储到Session中
+            // 登录成功后 将用户信息存储到Session中
             session.setAttribute(SESSION_USER_KEY, userInfo);
             System.out.println("Session存储完成");
             
@@ -92,11 +94,18 @@ public class AuthServiceImpl implements AuthService {
             return LoginResponseDTO.failure("登录失败：" + e.getMessage());
         }
     }
+
+    //注册方法实现 用户名和邮箱是唯一的
     
     @Override
     @Transactional
     public LoginResponseDTO register(RegisterDTO registerDTO) {
         try {
+            // 检查密码确认
+            if (!registerDTO.getPassword().equals(registerDTO.getConfirmPassword())) {
+                return LoginResponseDTO.failure("两次输入的密码不一致，请重新输入");
+            }
+            
             // 检查用户名是否已存在
             if (userAuthDao.existsByUsername(registerDTO.getUsername())) {
                 return LoginResponseDTO.failure("用户名已存在");
@@ -162,7 +171,7 @@ public class AuthServiceImpl implements AuthService {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
     
-    @Override
+    @Override//加密密码
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }

@@ -17,20 +17,20 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")//跨域
 public class AuthController {
     
     @Autowired
-    private AuthService authService;
+    private AuthService authService;//依赖注入：自动注入AuthService实例 业务逻辑交给
     
     /**
      * 用户登录
      */
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO, 
-                                                HttpSession session) {
-        LoginResponseDTO response = authService.login(loginDTO, session);
-        return ResponseEntity.ok(response);
+    @PostMapping("/login")//处理发送到/login路径的POST请求
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO, //从请求体中解析出LoginDTO对象
+                                                HttpSession session) {//自动注入的http会话对象
+        LoginResponseDTO response = authService.login(loginDTO, session);//loginDTO包含了用户输入的用户名和密码，loginResponseDTO包含了登录结果
+        return ResponseEntity.ok(response);//返回一个包含响应体的通用响应实体
     }
     
     /**

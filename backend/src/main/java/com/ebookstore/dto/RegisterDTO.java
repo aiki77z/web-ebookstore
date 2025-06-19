@@ -20,6 +20,9 @@ public class RegisterDTO {
     @Size(min = 6, message = "密码长度至少6个字符")
     private String password;
     
+    @NotBlank(message = "请确认密码")
+    private String confirmPassword;
+    
     @NotBlank(message = "姓名不能为空")
     private String name;
     

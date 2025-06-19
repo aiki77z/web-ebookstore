@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 public class Book {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)//主键自增
     private Long id;
     
     @Column(nullable = false, length = 100)
@@ -34,5 +34,5 @@ public class Book {
     private String cover;
     
     @Column(length = 20)
-    private String status;
+    private String status;//AVAILABLE/OUT_OF_STOCK
 } 

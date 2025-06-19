@@ -16,12 +16,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
     
     @Autowired
-    private LoginInterceptor loginInterceptor;
+    private LoginInterceptor loginInterceptor;//依赖注入：注入登录拦截器
     
     @Autowired
-    private AdminInterceptor adminInterceptor;
+    private AdminInterceptor adminInterceptor;//依赖注入：注入管理员权限拦截器
     
-    @Override
+    @Override//覆盖方法：注册拦截器
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册登录拦截器
         registry.addInterceptor(loginInterceptor)
@@ -37,12 +37,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/admin/**"); // 只对管理员API路径生效
     }
     
-    @Override
+    @Override//覆盖方法：配置CORS
     public void addCorsMappings(CorsRegistry registry) {
         // 配置CORS，允许前端跨域访问
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:3000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins("http://localhost:3000")//允许前端访问后端api
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")//支持的方法
                 .allowedHeaders("*")
                 .allowCredentials(true) // 允许Cookie
                 .maxAge(3600);

@@ -21,7 +21,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     /**
      * 根据用户ID和书籍ID查找购物车项
      */
-    Optional<CartItem> findByUserIdAndBookId(Long userId, Long bookId);
+    Optional<CartItem> findByUserIdAndBookId(Long userId, Long bookId);//可能为空
     
     /**
      * 根据用户对象和书籍ID查找购物车项

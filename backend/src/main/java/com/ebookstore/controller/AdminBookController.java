@@ -22,7 +22,7 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AdminBookController {
     
-    @Autowired
+    @Autowired//自动注入BookService实例，用于处理与书籍相关的业务逻辑
     private BookService bookService;
     
     /**
@@ -34,16 +34,16 @@ public class AdminBookController {
             @RequestParam(defaultValue = "10") int size) {
         
         try {
-            PageRequest pageRequest = PageRequest.of(page, size);
-            Page<Book> bookPage = bookService.getAllBooksForAdmin(pageRequest);
+            PageRequest pageRequest = PageRequest.of(page, size);//分页请求对象 page：页码，size：每页大小
+            Page<Book> bookPage = bookService.getAllBooksForAdmin(pageRequest);//函数依赖 获取管理员视图的图书
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("data", bookPage.getContent());
-            response.put("total", bookPage.getTotalElements());
+            response.put("data", bookPage.getContent());//当前页数据
+            response.put("total", bookPage.getTotalElements());//总记录数
             response.put("page", page);
             response.put("size", size);
-            response.put("totalPages", bookPage.getTotalPages());
+            response.put("totalPages", bookPage.getTotalPages());//总页数
             
             return ResponseEntity.ok(response);
             
@@ -62,7 +62,7 @@ public class AdminBookController {
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getBookById(@PathVariable Long id) {
         try {
-            Book book = bookService.getBookEntityById(id);
+            Book book = bookService.getBookEntityById(id);//获取图书实体
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -80,12 +80,12 @@ public class AdminBookController {
     }
     
     /**
-     * 添加新书籍
+     * 添加新书籍 请求json->Book实体->数据库保存->响应json
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> addBook(@Valid @RequestBody Book book) {
         try {
-            Book savedBook = bookService.saveBook(book);
+            Book savedBook = bookService.saveBook(book);//函数依赖 保存图书实体
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -137,7 +137,7 @@ public class AdminBookController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteBook(@PathVariable Long id) {
         try {
-            bookService.deleteBook(id);
+            bookService.deleteBook(id);//函数依赖
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

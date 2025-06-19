@@ -51,6 +51,7 @@ const LoginPage = () => {
             const result = await authService.register({
                 username: values.username,
                 password: values.password,
+                confirmPassword: values.confirmPassword,
                 name: values.name,
                 email: values.email,
                 phone: values.phone,
@@ -172,6 +173,27 @@ const LoginPage = () => {
                                         <Input.Password
                                             prefix={<LockOutlined />}
                                             placeholder="密码"
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        name="confirmPassword"
+                                        dependencies={['password']}
+                                        rules={[
+                                            { required: true, message: '请确认密码！' },
+                                            ({ getFieldValue }) => ({
+                                                validator(_, value) {
+                                                    if (!value || getFieldValue('password') === value) {
+                                                        return Promise.resolve();
+                                                    }
+                                                    return Promise.reject(new Error('两次输入的密码不一致！'));
+                                                },
+                                            }),
+                                        ]}
+                                    >
+                                        <Input.Password
+                                            prefix={<LockOutlined />}
+                                            placeholder="确认密码"
                                         />
                                     </Form.Item>
 

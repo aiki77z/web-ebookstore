@@ -25,26 +25,26 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class OrderController {
     @Autowired
-    private CartService cartService;
+    private CartService cartService;//依赖注入：自动注入CartService实例 业务逻辑交给
     
     @Autowired
-    private OrderService orderService;
+    private OrderService orderService;//依赖注入：自动注入OrderService实例 业务逻辑交给
     
     @Autowired
-    private AuthService authService;
+    private AuthService authService;//依赖注入：自动注入AuthService实例 业务逻辑交给
     
-    @GetMapping
+    @GetMapping//order实体->OrderItemDTO->响应json返回给前端
     public ResponseEntity<Map<String, Object>> getOrders(HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         try {
-            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            UserInfoDTO currentUser = authService.getCurrentUser(session);//函数依赖 获取当前用户
             if (currentUser == null) {
                 response.put("success", false);
                 response.put("message", "用户未登录");
                 return ResponseEntity.status(401).body(response);
             }
             
-            List<OrderItemDTO> items = orderService.getOrders();
+            List<OrderItemDTO> items = orderService.getOrders();//函数依赖 获取订单列表
             response.put("success", true);
             response.put("data", items);
             return ResponseEntity.ok(response);
@@ -56,23 +56,23 @@ public class OrderController {
         }
     }
     
-    @GetMapping("/{id}")
+    @GetMapping("/{id}")//路径参数
     public ResponseEntity<Map<String, Object>> getOrderById(
             @PathVariable Long id,
             HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         try {
-            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            UserInfoDTO currentUser = authService.getCurrentUser(session);//函数依赖 获取当前用户
             if (currentUser == null) {
                 response.put("success", false);
                 response.put("message", "用户未登录");
                 return ResponseEntity.status(401).body(response);
             }
             
-            OrderDTO order = orderService.getOrderById(id);
+            OrderDTO order = orderService.getOrderById(id);//函数依赖 获取订单详情
             response.put("success", true);
             response.put("data", order);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);//Oreder实体->OrderDTO->响应json返回给前端
             
         } catch (Exception e) {
             response.put("success", false);
@@ -81,7 +81,8 @@ public class OrderController {
         }
     }
 
-    @PostMapping("/create")
+    @PostMapping("/create")//创建订单 支持从购物车结算和直接购买两种方式
+    //请求json->Map<String, Object>->OrderItemDTO->Order实体->OrderItemDTO->响应json返回给前端
     public ResponseEntity<Map<String, Object>> createOrder(
             @RequestBody Map<String, Object> payload,
             HttpSession session) {
@@ -104,14 +105,14 @@ public class OrderController {
                     response.put("message", "订单商品列表为空");
                     return ResponseEntity.badRequest().body(response);
                 }
-                orderItems = orderService.createDirectOrder(items);
+                orderItems = orderService.createDirectOrder(items);//函数依赖
             } else {
                 // 处理从购物车结算的情况
                 List<Long> cartItemIds = null;
                 if (payload.containsKey("cartItemIds")) {
                     try {
                         Object cartItemIdsObj = payload.get("cartItemIds");
-                        if (cartItemIdsObj instanceof List) {
+                        if (cartItemIdsObj instanceof List) {//判断item类型 转化为Long
                             cartItemIds = ((List<?>) cartItemIdsObj).stream()
                                     .map(item -> {
                                         if (item instanceof Integer) {
@@ -141,7 +142,7 @@ public class OrderController {
                     return ResponseEntity.badRequest().body(response);
                 }
 
-                orderItems = orderService.createOrder(cartItemIds);
+                orderItems = orderService.createOrder(cartItemIds);//函数依赖
             }
             
             response.put("success", true);

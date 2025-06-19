@@ -17,14 +17,14 @@ import java.util.Optional;
  * 用户数据访问对象实现类
  * 通过Spring依赖注入使用Repository
  */
-@Repository
+@Repository//标记为Spring的Repository组件
 public class UserDaoImpl implements UserDao {
     
     @Autowired
     private UserRepository userRepository;
     
     @PersistenceContext
-    private EntityManager entityManager;
+    private EntityManager entityManager;//实体管理器
     
     @Override
     public Optional<User> findById(Long id) {

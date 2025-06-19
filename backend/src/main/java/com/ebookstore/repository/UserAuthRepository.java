@@ -2,6 +2,8 @@ package com.ebookstore.repository;
 
 import com.ebookstore.entity.UserAuth;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -16,7 +18,13 @@ public interface UserAuthRepository extends JpaRepository<UserAuth, Long> {
     /**
      * 根据用户名查找认证信息
      */
-    Optional<UserAuth> findByUsername(String username);
+    Optional<UserAuth> findByUsername(String username);//空值不会异常
+    
+    /**
+     * 根据用户ID查找认证信息
+     */
+    @Query("SELECT ua FROM UserAuth ua JOIN ua.user u WHERE u.id = :userId")
+    Optional<UserAuth> findByUserId(@Param("userId") Long userId);
     
     /**
      * 检查用户名是否存在

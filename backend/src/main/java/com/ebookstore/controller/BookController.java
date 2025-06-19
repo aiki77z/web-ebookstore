@@ -18,10 +18,10 @@ import java.util.Map;
 @RequestMapping("/api/books")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class BookController {
-    
+
     @Autowired
     private BookService bookService;
-    
+
     /**
      * 获取所有书籍
      */
@@ -41,7 +41,7 @@ public class BookController {
             return ResponseEntity.ok(response);
         }
     }
-    
+
     /**
      * 根据ID获取书籍详情
      */
@@ -61,7 +61,7 @@ public class BookController {
             return ResponseEntity.ok(response);
         }
     }
-    
+
     /**
      * 搜索书籍
      */

@@ -23,6 +23,8 @@ CREATE TABLE user_auth (
 
 -- 用户信息表（User）
 -- 存储用户基本信息，与认证信息分离
+-- id是主键
+-- auth_id是外键，关联到user_auth表的id
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL COMMENT '用户姓名',
@@ -76,6 +78,8 @@ CREATE TABLE cart_items (
 ) ENGINE=InnoDB COMMENT='购物车表';
 
 -- 订单表
+-- id是主键
+-- user_id是外键，关联到users表的id
 CREATE TABLE orders (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL COMMENT '用户ID',
@@ -95,6 +99,9 @@ CREATE TABLE orders (
 ) ENGINE=InnoDB COMMENT='订单表';
 
 -- 订单商品表
+-- id是主键
+-- order_id是外键，关联到orders表的id
+-- book_id是外键，关联到books表的id
 CREATE TABLE order_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL COMMENT '订单ID',
@@ -144,7 +151,7 @@ INSERT INTO books (title, author, price, description, cover, status) VALUES     
 --    order_items: (order_id, book_id) → quantity, price
 --
 -- 2. 范式设计：
---    - 所有表均满足第一范式（1NF）：每个属性都是不可分割的基本数据项
+--    - 所有表均满足第一范式（1NF）：每个属性都是不可分割的基本数据项 原子属性
 --    - 所有表均满足第二范式（2NF）：非主属性完全依赖主键
 --    - 所有表均满足第三范式（3NF）：非主属性不传递依赖主键
 --    - User和UserAuth分离满足BCNF：消除了用户基本信息与认证信息的混合依赖

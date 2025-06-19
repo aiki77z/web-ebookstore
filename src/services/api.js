@@ -109,4 +109,13 @@ export const orderApi = {
   cancelOrder: (orderId) => request(`/orders/${orderId}/cancel`, {
     method: 'POST',
   }),
-}; 
+};
+
+// 管理员用户管理API
+export const getAllUsers = () => request('/admin/users');
+
+export const toggleUserStatus = (userId) => request(`/admin/users/${userId}/status`, {
+  method: 'PUT',
+});
+
+export const getUserStatistics = (startDate, endDate) => request(`/admin/users/statistics?startDate=${startDate}&endDate=${endDate}`); 

@@ -11,12 +11,13 @@ import java.util.Optional;
 /**
  * 用户认证数据访问对象实现类
  * 通过Spring依赖注入使用Repository
+ * 将repository注入到dao层 两个配合使用
  */
 @Repository
 public class UserAuthDaoImpl implements UserAuthDao {
     
     @Autowired
-    private UserAuthRepository userAuthRepository;
+    private UserAuthRepository userAuthRepository;//注入UserAuthRepository
     
     @Override
     public Optional<UserAuth> findByUsername(String username) {

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class BookServiceImpl implements BookService {
     
     @Autowired
-    private BookRepository bookRepository;
+    private BookRepository bookRepository;//使用BookRepository来进行数据访问
     
     @Override
     public List<BookDTO> getAllBooks() {
@@ -44,7 +44,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public Book saveBook(Book book) {
         return bookRepository.save(book);
-    }
+    }//用repository保存book实体
     
     @Override
     public void deleteBook(Long id) {
@@ -65,7 +65,7 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的书籍"));
     }
     
-    @Override
+    @Override//支持管理员查看所有图书 使用分页功能
     public List<Book> searchBooksForAdmin(String query) {
         return bookRepository.searchBooks(query);
     }

@@ -13,4 +13,5 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     
     @Query("SELECT b FROM Book b WHERE lower(b.title) LIKE lower(concat('%', :query, '%')) OR lower(b.author) LIKE lower(concat('%', :query, '%'))")
     List<Book> searchBooks(@Param("query") String query);
-} 
+}
+//使用@Query注解来定义自定义查询

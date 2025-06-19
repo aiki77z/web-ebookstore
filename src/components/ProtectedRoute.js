@@ -4,8 +4,7 @@ import { Spin } from 'antd';
 import authService from '../services/authService';
 
 /**
- * 路由保护组件
- * 简化实现，避免无限刷新问题
+ * 路由保护组件 控制前端页面访问权限
  */
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
     const [loading, setLoading] = useState(true);

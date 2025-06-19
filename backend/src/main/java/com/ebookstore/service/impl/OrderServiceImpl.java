@@ -162,7 +162,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public List<OrderItemDTO> createDirectOrder(List<Map<String, Object>> items) {
-        User user = userService.getCurrentUser();
+        User user = userService.getCurrentUser();//函数依赖
 
         // 创建订单
         Order order = new Order();
