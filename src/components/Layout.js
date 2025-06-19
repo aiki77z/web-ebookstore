@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, message } from 'antd';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined, TeamOutlined } from '@ant-design/icons';
 import authService from '../services/authService';
 
 const { Sider, Content, Header } = Layout;
@@ -24,6 +24,7 @@ export default function LayoutComponent({ children }) {
         else if (path === '/personal') setSelectedKeys(['3']);
         else if (path === '/orders') setSelectedKeys(['4']);
         else if (path === '/admin/books') setSelectedKeys(['5']);
+        else if (path === '/admin/users') setSelectedKeys(['6']);
     }, [location.pathname]);
 
     // 处理登出
@@ -47,9 +48,14 @@ export default function LayoutComponent({ children }) {
                 <Link to="/orders">我的订单</Link>
             </Menu.Item>
             {userInfo && userInfo.role === 'ADMIN' && (
-                <Menu.Item key="admin" icon={<BookOutlined />}>
-                    <Link to="/admin/books">书籍管理</Link>
-                </Menu.Item>
+                <>
+                    <Menu.Item key="admin-books" icon={<BookOutlined />}>
+                        <Link to="/admin/books">书籍管理</Link>
+                    </Menu.Item>
+                    <Menu.Item key="admin-users" icon={<TeamOutlined />}>
+                        <Link to="/admin/users">用户管理</Link>
+                    </Menu.Item>
+                </>
             )}
             <Menu.Divider />
             <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
@@ -126,9 +132,12 @@ export default function LayoutComponent({ children }) {
                         {userInfo && userInfo.role === 'ADMIN' && (
                             <>
                                 <Menu.Divider />
-                                <Menu.SubMenu key="admin" icon={<BookOutlined />} title="管理员功能">
-                                    <Menu.Item key="5">
+                                <Menu.SubMenu key="admin" icon={<SettingOutlined />} title="管理员功能">
+                                    <Menu.Item key="5" icon={<BookOutlined />}>
                                         <Link to="/admin/books">书籍管理</Link>
+                                    </Menu.Item>
+                                    <Menu.Item key="6" icon={<TeamOutlined />}>
+                                        <Link to="/admin/users">用户管理</Link>
                                     </Menu.Item>
                                 </Menu.SubMenu>
                             </>
