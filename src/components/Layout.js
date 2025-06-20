@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, message } from 'antd';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined, TeamOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined, TeamOutlined, ShoppingOutlined, BarChartOutlined } from '@ant-design/icons';
 import authService from '../services/authService';
 
 const { Sider, Content, Header } = Layout;
@@ -23,9 +23,11 @@ export default function LayoutComponent({ children }) {
         else if (path === '/cart') setSelectedKeys(['2']);
         else if (path === '/personal') setSelectedKeys(['3']);
         else if (path === '/orders') setSelectedKeys(['4']);
-        else if (path === '/admin/books') setSelectedKeys(['5']);
-        else if (path === '/admin/users') setSelectedKeys(['6']);
-        else if (path === '/admin/orders') setSelectedKeys(['7']);
+        else if (path === '/statistics') setSelectedKeys(['5']);
+        else if (path === '/admin/books') setSelectedKeys(['6']);
+        else if (path === '/admin/users') setSelectedKeys(['7']);
+        else if (path === '/admin/orders') setSelectedKeys(['8']);
+        else if (path === '/admin/statistics') setSelectedKeys(['9']);
     }, [location.pathname]);
 
     // 处理登出
@@ -48,6 +50,9 @@ export default function LayoutComponent({ children }) {
             <Menu.Item key="orders" icon={<SettingOutlined />}>
                 <Link to="/orders">我的订单</Link>
             </Menu.Item>
+            <Menu.Item key="statistics" icon={<BarChartOutlined />}>
+                <Link to="/statistics">我的统计</Link>
+            </Menu.Item>
             {userInfo && userInfo.role === 'ADMIN' && (
                 <>
                     <Menu.Item key="admin-books" icon={<BookOutlined />}>
@@ -58,6 +63,9 @@ export default function LayoutComponent({ children }) {
                     </Menu.Item>
                     <Menu.Item key="admin-orders" icon={<ShoppingOutlined />}>
                         <Link to="/admin/orders">订单管理</Link>
+                    </Menu.Item>
+                    <Menu.Item key="admin-statistics" icon={<BarChartOutlined />}>
+                        <Link to="/admin/statistics">数据统计</Link>
                     </Menu.Item>
                 </>
             )}
@@ -131,20 +139,26 @@ export default function LayoutComponent({ children }) {
                         <Menu.Item key="4" icon={<SettingOutlined />}>
                             <Link to="/orders">我的订单</Link>
                         </Menu.Item>
+                        <Menu.Item key="5" icon={<BarChartOutlined />}>
+                            <Link to="/statistics">我的统计</Link>
+                        </Menu.Item>
                         
                         {/* 管理员菜单 */}
                         {userInfo && userInfo.role === 'ADMIN' && (
                             <>
                                 <Menu.Divider />
                                 <Menu.SubMenu key="admin" icon={<SettingOutlined />} title="管理员功能">
-                                    <Menu.Item key="5" icon={<BookOutlined />}>
+                                    <Menu.Item key="6" icon={<BookOutlined />}>
                                         <Link to="/admin/books">书籍管理</Link>
                                     </Menu.Item>
-                                    <Menu.Item key="6" icon={<TeamOutlined />}>
+                                    <Menu.Item key="7" icon={<TeamOutlined />}>
                                         <Link to="/admin/users">用户管理</Link>
                                     </Menu.Item>
-                                    <Menu.Item key="7" icon={<ShoppingOutlined />}>
+                                    <Menu.Item key="8" icon={<ShoppingOutlined />}>
                                         <Link to="/admin/orders">订单管理</Link>
+                                    </Menu.Item>
+                                    <Menu.Item key="9" icon={<BarChartOutlined />}>
+                                        <Link to="/admin/statistics">数据统计</Link>
                                     </Menu.Item>
                                 </Menu.SubMenu>
                             </>

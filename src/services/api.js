@@ -16,6 +16,13 @@ async function request(url, options = {}) {
       ...options,
     });
 
+    // 检查响应状态
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API请求失败: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -141,4 +148,31 @@ export const toggleUserStatus = (userId) => request(`/admin/users/${userId}/stat
   method: 'PUT',
 });
 
-export const getUserStatistics = (startDate, endDate) => request(`/admin/users/statistics?startDate=${startDate}&endDate=${endDate}`); 
+export const getUserStatistics = (startDate, endDate) => request(`/admin/users/statistics?startDate=${startDate}&endDate=${endDate}`);
+
+// 统计相关API
+export const statisticsApi = {
+  // 获取书籍销量统计（热销榜）- 管理员功能
+  getBookSalesStatistics: (startDate, endDate) => {
+    const params = new URLSearchParams();
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    return request(`/statistics/books?${params.toString()}`);
+  },
+
+  // 获取用户消费统计（消费榜）- 管理员功能
+  getUserConsumptionStatistics: (startDate, endDate) => {
+    const params = new URLSearchParams();
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    return request(`/statistics/users?${params.toString()}`);
+  },
+
+  // 获取个人购书统计 - 用户功能
+  getPersonalStatistics: (startDate, endDate) => {
+    const params = new URLSearchParams();
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    return request(`/statistics/personal?${params.toString()}`);
+  },
+}; 

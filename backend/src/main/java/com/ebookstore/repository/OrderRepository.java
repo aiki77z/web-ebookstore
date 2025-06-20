@@ -41,4 +41,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("bookName") String bookName,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+    
+    // 根据用户ID和时间范围查询订单
+    List<Order> findByUserIdAndOrderDateBetween(Long userId, LocalDateTime startDate, LocalDateTime endDate);
 } 
