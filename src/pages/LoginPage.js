@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Tabs, message, Row, Col } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Tabs, message, Row, Col, Modal, App } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined, HomeOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
@@ -10,6 +10,7 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('login');
     const navigate = useNavigate();
+    const { modal } = App.useApp();
 
     // 组件挂载时检查是否已登录
     useEffect(() => {
@@ -20,6 +21,7 @@ const LoginPage = () => {
 
     // 处理登录
     const handleLogin = async (values) => {
+        console.log('前端开始处理登录，输入值:', values);
         setLoading(true);
         try {
             const result = await authService.login({
@@ -27,17 +29,37 @@ const LoginPage = () => {
                 password: values.password
             });
 
+            console.log('前端收到登录结果:', result);
+
             if (result.success) {
+                console.log('登录成功，准备跳转');
                 message.success('登录成功！');
                 // 登录成功后导航到首页
                 setTimeout(() => {
                     navigate('/', { replace: true });
                 }, 1000);
             } else {
-                message.error(result.message || '登录失败');
+                console.log('登录失败，显示错误弹窗，错误信息:', result.message);
+                
+                // 使用modal.error显示具体的错误信息
+                modal.error({
+                    title: '登录失败',
+                    icon: <ExclamationCircleOutlined />,
+                    content: result.message || '登录失败，请重试',
+                    okText: '确定',
+                    centered: true,
+                });
             }
         } catch (error) {
-            message.error('登录失败，请稍后重试');
+            console.log('登录过程中发生异常:', error);
+            // 网络错误也使用modal.error显示
+            modal.error({
+                title: '网络错误',
+                icon: <ExclamationCircleOutlined />,
+                content: '网络连接失败，请检查网络后重试',
+                okText: '确定',
+                centered: true,
+            });
             console.error('登录错误:', error);
         } finally {
             setLoading(false);
@@ -65,10 +87,24 @@ const LoginPage = () => {
                     navigate('/', { replace: true });
                 }, 1000);
             } else {
-                message.error(result.message || '注册失败');
+                // 注册失败也使用Modal弹窗显示
+                modal.error({
+                    title: '注册失败',
+                    icon: <ExclamationCircleOutlined />,
+                    content: result.message || '注册失败，请重试',
+                    okText: '确定',
+                    centered: true,
+                });
             }
         } catch (error) {
-            message.error('注册失败，请稍后重试');
+            // 注册网络错误也使用Modal弹窗显示
+            modal.error({
+                title: '网络错误',
+                icon: <ExclamationCircleOutlined />,
+                content: '网络连接失败，请检查网络后重试',
+                okText: '确定',
+                centered: true,
+            });
             console.error('注册错误:', error);
         } finally {
             setLoading(false);

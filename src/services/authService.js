@@ -9,7 +9,7 @@ class AuthService {
     
     // 用户登录
     async login(loginData) {
-        console.log('开始登录请求，数据:', loginData);
+        console.log('authService: 开始登录请求，数据:', loginData);
         
         try {
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -21,29 +21,29 @@ class AuthService {
                 body: JSON.stringify(loginData)
             });
             
-            console.log('收到响应，状态码:', response.status);
-            console.log('响应头:', response.headers);
+            console.log('authService: 收到响应，状态码:', response.status);
+            console.log('authService: 响应头:', response.headers);
             
             if (!response.ok) {
-                console.error('响应状态不正常:', response.status);
+                console.error('authService: 响应状态不正常:', response.status);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const result = await response.json();
-            console.log('解析响应结果:', result);
+            console.log('authService: 解析响应结果:', result);
             
             if (result.success) {
-                console.log('登录成功，用户信息:', result.userInfo);
+                console.log('authService: 登录成功，用户信息:', result.userInfo);
                 // 登录成功，存储用户信息到localStorage
                 localStorage.setItem('userInfo', JSON.stringify(result.userInfo));
                 localStorage.setItem('isLoggedIn', 'true');
                 return { success: true, userInfo: result.userInfo };
             } else {
-                console.log('登录失败，错误信息:', result.message);
+                console.log('authService: 登录失败，错误信息:', result.message);
                 return { success: false, message: result.message };
             }
         } catch (error) {
-            console.error('登录请求异常:', error);
+            console.error('authService: 登录请求异常:', error);
             return { success: false, message: '网络错误，请稍后重试' };
         }
     }

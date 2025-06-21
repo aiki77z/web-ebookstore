@@ -47,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
             
             if (!userAuthOpt.isPresent()) {
                 System.out.println("用户不存在: " + loginDTO.getUsername());
-                return LoginResponseDTO.failure("用户名或密码错误");
+                return LoginResponseDTO.failure("用户不存在");
             }
             
             UserAuth userAuth = userAuthOpt.get();
@@ -62,13 +62,13 @@ public class AuthServiceImpl implements AuthService {
             
             if (!passwordMatches) {
                 System.out.println("密码错误");
-                return LoginResponseDTO.failure("用户名或密码错误");
+                return LoginResponseDTO.failure("密码错误");
             }
             
             // 检查账户是否激活
             if (!userAuth.getActive()) {
                 System.out.println("账户已被禁用");
-                return LoginResponseDTO.failure("您的账号已被禁用");
+                return LoginResponseDTO.failure("用户已被禁用");
             }
             
             // 更新最后登录时间

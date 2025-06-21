@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Layout, ConfigProvider } from 'antd';
+import { Layout, ConfigProvider, App as AntdApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -32,47 +32,49 @@ const ProtectedLayout = ({ children, requireAdmin = false }) => (
 function App() {
   return (
     <ConfigProvider locale={zhCN}>
-      <AuthProvider>
-        <CartProvider>
-          <Router>
-            <Routes>
-              {/* 公开路由 - 登录页面 */}
-              <Route path="/login" element={<LoginPage />} />
-              
-              {/* 受保护的路由 */}
-              <Route path="/" element={<ProtectedLayout><Home /></ProtectedLayout>} />
-              <Route path="/book/:id" element={<ProtectedLayout><BookDetailPage /></ProtectedLayout>} />
-              <Route path="/cart" element={<ProtectedLayout><CartPage /></ProtectedLayout>} />
-              <Route path="/personal" element={<ProtectedLayout><PersonalPage /></ProtectedLayout>} />
-              <Route path="/orders" element={<ProtectedLayout><OrderPage /></ProtectedLayout>} />
-              
-              {/* 管理员专用路由 */}
-              <Route path="/admin/books" element={<ProtectedLayout requireAdmin={true}><AdminBookPage /></ProtectedLayout>} />
-              <Route path="/admin/users" element={<ProtectedLayout requireAdmin={true}><AdminUserPage /></ProtectedLayout>} />
-              <Route path="/admin/orders" element={<ProtectedLayout requireAdmin={true}><AdminOrderPage /></ProtectedLayout>} />
-              <Route path="/admin/statistics" element={<ProtectedLayout requireAdmin={true}><AdminStatisticsPage /></ProtectedLayout>} />
-              
-              {/* 用户统计路由 */}
-              <Route path="/statistics" element={<ProtectedLayout><PersonalStatisticsPage /></ProtectedLayout>} />
-              
-              {/* 404页面 */}
-              <Route path="*" element={
-                <div style={{ 
-                  padding: 50, 
-                  textAlign: 'center', 
-                  minHeight: '100vh',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 18
-                }}>
-                  页面未找到 - 404
-                </div>
-              } />
-            </Routes>
-          </Router>
-        </CartProvider>
-      </AuthProvider>
+      <AntdApp>
+        <AuthProvider>
+          <CartProvider>
+            <Router>
+              <Routes>
+                {/* 公开路由 - 登录页面 */}
+                <Route path="/login" element={<LoginPage />} />
+                
+                {/* 受保护的路由 */}
+                <Route path="/" element={<ProtectedLayout><Home /></ProtectedLayout>} />
+                <Route path="/book/:id" element={<ProtectedLayout><BookDetailPage /></ProtectedLayout>} />
+                <Route path="/cart" element={<ProtectedLayout><CartPage /></ProtectedLayout>} />
+                <Route path="/personal" element={<ProtectedLayout><PersonalPage /></ProtectedLayout>} />
+                <Route path="/orders" element={<ProtectedLayout><OrderPage /></ProtectedLayout>} />
+                
+                {/* 管理员专用路由 */}
+                <Route path="/admin/books" element={<ProtectedLayout requireAdmin={true}><AdminBookPage /></ProtectedLayout>} />
+                <Route path="/admin/users" element={<ProtectedLayout requireAdmin={true}><AdminUserPage /></ProtectedLayout>} />
+                <Route path="/admin/orders" element={<ProtectedLayout requireAdmin={true}><AdminOrderPage /></ProtectedLayout>} />
+                <Route path="/admin/statistics" element={<ProtectedLayout requireAdmin={true}><AdminStatisticsPage /></ProtectedLayout>} />
+                
+                {/* 用户统计路由 */}
+                <Route path="/statistics" element={<ProtectedLayout><PersonalStatisticsPage /></ProtectedLayout>} />
+                
+                {/* 404页面 */}
+                <Route path="*" element={
+                  <div style={{ 
+                    padding: 50, 
+                    textAlign: 'center', 
+                    minHeight: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 18
+                  }}>
+                    页面未找到 - 404
+                  </div>
+                } />
+              </Routes>
+            </Router>
+          </CartProvider>
+        </AuthProvider>
+      </AntdApp>
     </ConfigProvider>
   );
 }

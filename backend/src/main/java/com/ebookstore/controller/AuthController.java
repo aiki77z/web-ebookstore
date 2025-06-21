@@ -30,7 +30,13 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO, //从请求体中解析出LoginDTO对象
                                                 HttpSession session) {//自动注入的http会话对象
         LoginResponseDTO response = authService.login(loginDTO, session);//loginDTO包含了用户输入的用户名和密码，loginResponseDTO包含了登录结果
-        return ResponseEntity.ok(response);//返回一个包含响应体的通用响应实体
+        
+        // 根据登录结果返回不同的HTTP状态码
+        if (response.getSuccess()) {
+            return ResponseEntity.ok(response);//登录成功返回200
+        } else {
+            return ResponseEntity.ok(response);//登录失败仍然返回200，但在响应体中包含错误信息
+        }
     }
     
     /**
