@@ -177,4 +177,62 @@ public class AdminBookController {
             return ResponseEntity.ok(response);
         }
     }
+    
+    /**
+     * 更新书籍库存
+     */
+    @PutMapping("/{id}/stock")
+    public ResponseEntity<Map<String, Object>> updateBookStock(
+            @PathVariable Long id, 
+            @RequestParam Integer stock) {
+        
+        try {
+            boolean success = bookService.updateStock(id, stock);
+            
+            Map<String, Object> response = new HashMap<>();
+            if (success) {
+                response.put("success", true);
+                response.put("message", "库存更新成功");
+            } else {
+                response.put("success", false);
+                response.put("message", "库存更新失败");
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "更新库存失败：" + e.getMessage());
+            
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * 检查书籍库存
+     */
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<Map<String, Object>> checkBookStock(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "1") Integer quantity) {
+        
+        try {
+            boolean available = bookService.checkStock(id, quantity);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("available", available);
+            response.put("message", available ? "库存充足" : "库存不足");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "检查库存失败：" + e.getMessage());
+            
+            return ResponseEntity.ok(response);
+        }
+    }
 } 

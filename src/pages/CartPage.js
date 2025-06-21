@@ -29,8 +29,12 @@ export default function CartPage() {
     (sum, item) => sum + item.book.price * item.quantity, 0
   );
 
-  // 检查商品是否可选择（非售罄状态）
-  const isItemSelectable = (item) => item.book.status !== 'OUT_OF_STOCK';
+  // 检查商品是否可选择（非售罄状态且有库存）
+  const isItemSelectable = (item) => {
+    return item.book.status !== 'OUT_OF_STOCK' && 
+           item.book.stock > 0 && 
+           item.book.stock >= item.quantity;
+  };
 
   // 切换选择状态
   const toggleSelect = (itemId) => {
@@ -130,7 +134,7 @@ export default function CartPage() {
               right: '0',
               fontSize: '12px'
             }}>
-              售罄
+              {record.book.stock === 0 ? '售罄' : '库存不足'}
             </Tag>
           )}
         </div>
@@ -174,24 +178,29 @@ export default function CartPage() {
       dataIndex: 'quantity',
       key: 'quantity',
       render: (quantity, record) => (
-        <Space>
-          <Button 
-            size="small" 
-            onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
-            disabled={quantity <= 1 || !isItemSelectable(record)}
-          >
-            -
-          </Button>
-          <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
-            {quantity}
-          </span>
-          <Button 
-            size="small" 
-            onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
-            disabled={!isItemSelectable(record)}
-          >
-            +
-          </Button>
+        <Space direction="vertical" size="small">
+          <Space>
+            <Button 
+              size="small" 
+              onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
+              disabled={quantity <= 1 || !isItemSelectable(record)}
+            >
+              -
+            </Button>
+            <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+              {quantity}
+            </span>
+            <Button 
+              size="small" 
+              onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
+              disabled={!isItemSelectable(record) || quantity >= record.book.stock}
+            >
+              +
+            </Button>
+          </Space>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            库存: {record.book.stock}本
+          </div>
         </Space>
       ),
     },

@@ -159,24 +159,35 @@ export default function BookDetailPage() {
           <Descriptions bordered column={1}>
             <Descriptions.Item label="作者">{book.author}</Descriptions.Item>
             <Descriptions.Item label="价格">￥{book.price}</Descriptions.Item>
-            <Descriptions.Item label="库存状态">
-              {isOutOfStock ? (
-                <Tag color="error">售罄</Tag>
+            <Descriptions.Item label="库存数量">
+              {book.stock > 0 ? (
+                <span style={{ color: book.stock <= 10 ? '#ff7875' : '#52c41a' }}>
+                  {book.stock}本 {book.stock <= 10 && book.stock > 0 && '(库存较少)'}
+                </span>
               ) : (
-                <Tag color="success">有库存</Tag>
+                <Tag color="error">售罄</Tag>
               )}
             </Descriptions.Item>
+            {book.isbn && (
+              <Descriptions.Item label="ISBN">{book.isbn}</Descriptions.Item>
+            )}
           </Descriptions>
 
           <div style={{ margin: '24px 0' }}>
             <span style={{ marginRight: '16px' }}>数量：</span>
             <InputNumber
               min={1}
+              max={book.stock || 1}
               value={quantity}
               onChange={setQuantity}
               style={{ width: '100px' }}
               disabled={isOutOfStock}
             />
+            {book.stock > 0 && (
+              <span style={{ marginLeft: '8px', color: '#666', fontSize: '12px' }}>
+                (最多可购买{book.stock}本)
+              </span>
+            )}
           </div>
 
           <div>

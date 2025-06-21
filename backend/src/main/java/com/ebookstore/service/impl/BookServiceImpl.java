@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.List;
@@ -70,15 +71,73 @@ public class BookServiceImpl implements BookService {
         return bookRepository.searchBooks(query);
     }
     
+    // 实现库存管理方法
+    @Override
+    @Transactional
+    public boolean updateStock(Long bookId, Integer quantity) {
+        try {
+            Book book = getBookEntityById(bookId);
+            book.setStock(quantity);
+            
+            // 根据库存量更新状态
+            if (quantity > 0) {
+                book.setStatus("AVAILABLE");
+            } else {
+                book.setStatus("OUT_OF_STOCK");
+            }
+            
+            bookRepository.save(book);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    @Override
+    @Transactional
+    public boolean reduceStock(Long bookId, Integer quantity) {
+        try {
+            Book book = getBookEntityById(bookId);
+            
+            if (book.getStock() < quantity) {
+                return false; // 库存不足
+            }
+            
+            book.setStock(book.getStock() - quantity);
+            
+            // 根据库存量更新状态
+            if (book.getStock() == 0) {
+                book.setStatus("OUT_OF_STOCK");
+            }
+            
+            bookRepository.save(book);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean checkStock(Long bookId, Integer quantity) {
+        try {
+            Book book = getBookEntityById(bookId);
+            return book.getStock() >= quantity;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
     private BookDTO convertToDTO(Book book) {
-        return new BookDTO(
-                book.getId(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getPrice(),
-                book.getDescription(),
-                book.getCover(),
-                book.getStatus()
-        );
+        BookDTO dto = new BookDTO();
+        dto.setId(book.getId());
+        dto.setTitle(book.getTitle());
+        dto.setAuthor(book.getAuthor());
+        dto.setPrice(book.getPrice());
+        dto.setDescription(book.getDescription());
+        dto.setCover(book.getCover());
+        dto.setStatus(book.getStatus());
+        dto.setStock(book.getStock());
+        dto.setIsbn(book.getIsbn());
+        return dto;
     }
 } 

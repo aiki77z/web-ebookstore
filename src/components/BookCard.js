@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 const { Meta } = Card;
 
 export default function BookCard({ book }) {
-  const isOutOfStock = book.status === 'OUT_OF_STOCK';
+  const isOutOfStock = book.status === 'OUT_OF_STOCK' || book.stock === 0;
 
   return (
     <Card
@@ -40,7 +40,20 @@ export default function BookCard({ book }) {
         }
         description={
           <div style={{ color: isOutOfStock ? '#999' : 'inherit' }}>
-            ￥{book.price}
+            <div>￥{book.price}</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>
+              {book.stock !== undefined ? (
+                book.stock > 0 ? (
+                  <span style={{ color: book.stock <= 10 ? '#ff7875' : '#52c41a' }}>
+                    库存: {book.stock}本
+                  </span>
+                ) : (
+                  <span style={{ color: '#ff4d4f' }}>已售罄</span>
+                )
+              ) : (
+                <span style={{ color: '#999' }}>库存未知</span>
+              )}
+            </div>
           </div>
         }
       />

@@ -11,7 +11,8 @@ import {
     Space, 
     Card 
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, StockOutlined } from '@ant-design/icons';
+import { adminBookApi } from '../services/api';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -22,6 +23,9 @@ const AdminBookPage = () => {
     const [editingBook, setEditingBook] = useState(null);
     const [form] = Form.useForm();
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [stockModalVisible, setStockModalVisible] = useState(false);
+    const [stockForm] = Form.useForm();
+    const [editingStock, setEditingStock] = useState(null);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -176,6 +180,43 @@ const AdminBookPage = () => {
         form.resetFields();
     };
 
+    // 打开库存管理模态框
+    const handleStockEdit = (book) => {
+        setEditingStock(book);
+        stockForm.setFieldsValue({ stock: book.stock });
+        setStockModalVisible(true);
+    };
+
+    // 更新库存
+    const handleUpdateStock = async (values) => {
+        setLoading(true);
+        try {
+            const response = await adminBookApi.updateStock(editingStock.id, values.stock);
+            
+            if (response.success) {
+                message.success('库存更新成功');
+                setStockModalVisible(false);
+                setEditingStock(null);
+                stockForm.resetFields();
+                fetchBooks();
+            } else {
+                message.error(response.message || '库存更新失败');
+            }
+        } catch (error) {
+            console.error('更新库存失败:', error);
+            message.error('网络错误，请稍后重试');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 关闭库存模态框
+    const handleStockCancel = () => {
+        setStockModalVisible(false);
+        setEditingStock(null);
+        stockForm.resetFields();
+    };
+
     useEffect(() => {
         fetchBooks();
     }, []);
@@ -204,16 +245,36 @@ const AdminBookPage = () => {
             render: (price) => `¥${price}`,
         },
         {
+            title: '库存',
+            dataIndex: 'stock',
+            key: 'stock',
+            render: (stock, record) => (
+                <span style={{ color: stock === 0 ? '#ff4d4f' : stock <= 10 ? '#fa8c16' : '#52c41a' }}>
+                    {stock}本
+                </span>
+            ),
+        },
+        {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
-            render: (status) => status === 'AVAILABLE' ? '有库存' : '缺货',
+            render: (status, record) => {
+                if (record.stock === 0) return '售罄';
+                return status === 'AVAILABLE' ? '有库存' : '缺货';
+            },
+        },
+        {
+            title: 'ISBN',
+            dataIndex: 'isbn',
+            key: 'isbn',
+            render: (isbn) => isbn || '-',
         },
         {
             title: '操作',
             key: 'action',
+            width: 250,
             render: (_, record) => (
-                <Space size="middle">
+                <Space size="small">
                     <Button 
                         type="primary" 
                         size="small" 
@@ -221,6 +282,14 @@ const AdminBookPage = () => {
                         onClick={() => handleEdit(record)}
                     >
                         编辑
+                    </Button>
+                    <Button 
+                        type="default" 
+                        size="small" 
+                        icon={<StockOutlined />}
+                        onClick={() => handleStockEdit(record)}
+                    >
+                        库存
                     </Button>
                     <Popconfirm
                         title="确定要删除这本书吗？"
@@ -344,12 +413,67 @@ const AdminBookPage = () => {
                     </Form.Item>
 
                     <Form.Item
+                        name="stock"
+                        label="库存数量"
+                        rules={[{ required: true, message: '请输入库存数量！' }]}
+                        initialValue={100}
+                    >
+                        <InputNumber
+                            placeholder="请输入库存数量"
+                            style={{ width: '100%' }}
+                            min={0}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="isbn"
+                        label="ISBN编号"
+                    >
+                        <Input placeholder="请输入ISBN编号（可选）" />
+                    </Form.Item>
+
+                    <Form.Item
                         name="status"
                         label="状态"
                         initialValue="AVAILABLE"
                     >
                         <Input placeholder="状态：AVAILABLE 或 OUT_OF_STOCK" />
                     </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* 库存管理模态框 */}
+            <Modal
+                title={`管理库存 - ${editingStock?.title}`}
+                visible={stockModalVisible}
+                onCancel={handleStockCancel}
+                onOk={() => stockForm.submit()}
+                confirmLoading={loading}
+                width={400}
+            >
+                <Form
+                    form={stockForm}
+                    layout="vertical"
+                    onFinish={handleUpdateStock}
+                >
+                    <Form.Item
+                        name="stock"
+                        label="库存数量"
+                        rules={[
+                            { required: true, message: '请输入库存数量！' },
+                            { type: 'number', min: 0, message: '库存数量不能为负数！' }
+                        ]}
+                    >
+                        <InputNumber
+                            placeholder="请输入库存数量"
+                            style={{ width: '100%' }}
+                            min={0}
+                            precision={0}
+                        />
+                    </Form.Item>
+                    <div style={{ color: '#666', fontSize: '12px' }}>
+                        当前库存：{editingStock?.stock}本
+                    </div>
                 </Form>
             </Modal>
         </Card>

@@ -30,4 +30,11 @@ public interface BookService {
     Book getBookEntityById(Long id);
     
     List<Book> searchBooksForAdmin(String query);
+    
+    // 库存管理方法
+    boolean updateStock(Long bookId, Integer quantity);
+    
+    boolean reduceStock(Long bookId, Integer quantity);
+    
+    boolean checkStock(Long bookId, Integer quantity);
 } 

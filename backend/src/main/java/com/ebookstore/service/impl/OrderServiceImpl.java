@@ -13,6 +13,7 @@ import com.ebookstore.repository.OrderRepository;
 import com.ebookstore.repository.BookRepository;
 import com.ebookstore.service.OrderService;
 import com.ebookstore.service.UserService;
+import com.ebookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private BookRepository bookRepository;
+    
+    @Autowired
+    private BookService bookService;
 
     @Override
     public List<OrderItemDTO> getOrders() {
@@ -89,6 +93,13 @@ public class OrderServiceImpl implements OrderService {
         if (selectedItems.isEmpty()) {
             throw new IllegalArgumentException("没有可购买的商品");
         }
+        
+        // 先检查所有商品的库存
+        for (CartItem cartItem : selectedItems) {
+            if (!bookService.checkStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
+                throw new IllegalArgumentException("商品《" + cartItem.getBook().getTitle() + "》库存不足，需要" + cartItem.getQuantity() + "本");
+            }
+        }
                 
         // 创建订单
         Order order = new Order();
@@ -117,6 +128,13 @@ public class OrderServiceImpl implements OrderService {
         try {
             // 保存订单及订单项
             order = orderRepository.save(order);
+            
+            // 减少库存
+            for (CartItem cartItem : selectedItems) {
+                if (!bookService.reduceStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
+                    throw new RuntimeException("减少《" + cartItem.getBook().getTitle() + "》库存失败");
+                }
+            }
             
             // 删除购物车中的相关项目
             cartItemRepository.deleteAll(selectedItems);
@@ -184,6 +202,18 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("COMPLETED");
         order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址
 
+        // 先检查所有商品的库存
+        for (Map<String, Object> item : items) {
+            Long bookId = Long.valueOf(item.get("bookId").toString());
+            Integer quantity = Integer.valueOf(item.get("quantity").toString());
+            
+            if (!bookService.checkStock(bookId, quantity)) {
+                Book book = bookRepository.findById(bookId)
+                        .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
+                throw new IllegalArgumentException("商品《" + book.getTitle() + "》库存不足，需要" + quantity + "本");
+            }
+        }
+
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -210,6 +240,18 @@ public class OrderServiceImpl implements OrderService {
         try {
             // 保存订单
             order = orderRepository.save(order);
+            
+            // 减少库存
+            for (Map<String, Object> item : items) {
+                Long bookId = Long.valueOf(item.get("bookId").toString());
+                Integer quantity = Integer.valueOf(item.get("quantity").toString());
+                
+                if (!bookService.reduceStock(bookId, quantity)) {
+                    Book book = bookRepository.findById(bookId)
+                            .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
+                    throw new RuntimeException("减少《" + book.getTitle() + "》库存失败");
+                }
+            }
         
             // 转换返回数据
             return order.getItems().stream()

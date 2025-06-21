@@ -150,6 +150,43 @@ export const toggleUserStatus = (userId) => request(`/admin/users/${userId}/stat
 
 export const getUserStatistics = (startDate, endDate) => request(`/admin/users/statistics?startDate=${startDate}&endDate=${endDate}`);
 
+// 管理员书籍管理API
+export const adminBookApi = {
+  // 获取所有书籍（分页）
+  getBooks: (page = 0, size = 10) => request(`/admin/books?page=${page}&size=${size}`),
+  
+  // 获取书籍详情
+  getBook: (id) => request(`/admin/books/${id}`),
+  
+  // 添加书籍
+  addBook: (bookData) => request('/admin/books', {
+    method: 'POST',
+    body: JSON.stringify(bookData),
+  }),
+  
+  // 更新书籍
+  updateBook: (id, bookData) => request(`/admin/books/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(bookData),
+  }),
+  
+  // 删除书籍
+  deleteBook: (id) => request(`/admin/books/${id}`, {
+    method: 'DELETE',
+  }),
+  
+  // 搜索书籍
+  searchBooks: (keyword) => request(`/admin/books/search?keyword=${encodeURIComponent(keyword)}`),
+  
+  // 更新书籍库存
+  updateStock: (id, stock) => request(`/admin/books/${id}/stock?stock=${stock}`, {
+    method: 'PUT',
+  }),
+  
+  // 检查书籍库存
+  checkStock: (id, quantity = 1) => request(`/admin/books/${id}/stock?quantity=${quantity}`),
+};
+
 // 统计相关API
 export const statisticsApi = {
   // 获取书籍销量统计（热销榜）- 管理员功能
