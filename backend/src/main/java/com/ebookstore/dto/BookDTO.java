@@ -38,4 +38,6 @@ public class BookDTO {
     private Integer stock;
     
     private String isbn;
+    
+    private Boolean deleted; // 软删除标记
 } 

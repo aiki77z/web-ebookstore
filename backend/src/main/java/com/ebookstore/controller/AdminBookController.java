@@ -132,23 +132,36 @@ public class AdminBookController {
     }
     
     /**
-     * 删除书籍
+     * 删除书籍（软删除）或恢复书籍
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteBook(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> toggleBookStatus(@PathVariable Long id) {
         try {
-            bookService.deleteBook(id);//函数依赖
+            // 先获取书籍当前状态
+            Book book = bookService.getBookEntityById(id);
+            boolean success;
+            String message;
+            
+            if (book.getDeleted()) {
+                // 书籍已删除，执行恢复操作
+                success = bookService.restoreBook(id);
+                message = success ? "书籍恢复成功" : "恢复失败";
+            } else {
+                // 书籍未删除，执行删除操作
+                success = bookService.softDeleteBook(id);
+                message = success ? "书籍删除成功" : "删除失败";
+            }
             
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "书籍删除成功");
+            response.put("success", success);
+            response.put("message", message);
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "删除书籍失败：" + e.getMessage());
+            response.put("message", "操作失败：" + e.getMessage());
             
             return ResponseEntity.ok(response);
         }

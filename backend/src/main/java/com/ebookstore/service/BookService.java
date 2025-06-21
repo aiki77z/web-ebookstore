@@ -13,7 +13,7 @@ import java.util.List;
  */
 public interface BookService {
     
-    // 普通用户功能
+    // 普通用户功能 - 只能看到未删除的书籍
     List<BookDTO> getAllBooks();
     
     BookDTO getBookById(Long id);
@@ -23,11 +23,15 @@ public interface BookService {
     // 管理员功能
     Book saveBook(Book book);
     
-    void deleteBook(Long id);
+    boolean softDeleteBook(Long id); // 软删除方法
+    
+    boolean restoreBook(Long id); // 恢复书籍方法
     
     Page<Book> getAllBooksForAdmin(Pageable pageable);
     
-    Book getBookEntityById(Long id);
+    Book getBookEntityById(Long id); // 管理员可以获取包括已删除的书籍
+    
+    Book getAvailableBookById(Long id); // 只获取未删除的书籍
     
     List<Book> searchBooksForAdmin(String query);
     
@@ -37,4 +41,7 @@ public interface BookService {
     boolean reduceStock(Long bookId, Integer quantity);
     
     boolean checkStock(Long bookId, Integer quantity);
+    
+    // 统计和订单相关方法 - 保持历史数据完整性
+    List<Book> getBooksByIds(List<Long> ids);
 } 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Table, 
     Button, 
@@ -9,7 +9,8 @@ import {
     message, 
     Popconfirm, 
     Space, 
-    Card 
+    Card,
+    Tag 
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, StockOutlined } from '@ant-design/icons';
 import { adminBookApi } from '../services/api';
@@ -33,7 +34,7 @@ const AdminBookPage = () => {
     });
 
     // 获取书籍列表
-    const fetchBooks = async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const fetchBooks = useCallback(async (page = pagination.current, pageSize = pagination.pageSize) => {
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/admin/books?page=${page - 1}&size=${pageSize}`, {
@@ -43,12 +44,12 @@ const AdminBookPage = () => {
             
             if (result.success) {
                 setBooks(result.data);
-                setPagination({
-                    ...pagination,
+                setPagination(prev => ({
+                    ...prev,
                     current: page,
                     pageSize: pageSize,
                     total: result.total
-                });
+                }));
             } else {
                 message.error(result.message || '获取书籍列表失败');
             }
@@ -58,7 +59,7 @@ const AdminBookPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.current, pagination.pageSize]);
 
     // 搜索书籍
     const searchBooks = async (keyword) => {
@@ -76,10 +77,10 @@ const AdminBookPage = () => {
             
             if (result.success) {
                 setBooks(result.data);
-                setPagination({
-                    ...pagination,
+                setPagination(prev => ({
+                    ...prev,
                     total: result.data.length
-                });
+                }));
             } else {
                 message.error(result.message || '搜索失败');
             }
@@ -219,7 +220,7 @@ const AdminBookPage = () => {
 
     useEffect(() => {
         fetchBooks();
-    }, []);
+    }, [fetchBooks]);
 
     const columns = [
         {
@@ -259,8 +260,11 @@ const AdminBookPage = () => {
             dataIndex: 'status',
             key: 'status',
             render: (status, record) => {
-                if (record.stock === 0) return '售罄';
-                return status === 'AVAILABLE' ? '有库存' : '缺货';
+                if (record.deleted) {
+                    return <Tag color="error">已删除</Tag>;
+                }
+                if (record.stock === 0) return <Tag color="warning">售罄</Tag>;
+                return status === 'AVAILABLE' ? <Tag color="success">有库存</Tag> : <Tag color="default">缺货</Tag>;
             },
         },
         {
@@ -288,22 +292,24 @@ const AdminBookPage = () => {
                         size="small" 
                         icon={<StockOutlined />}
                         onClick={() => handleStockEdit(record)}
+                        disabled={record.deleted}
                     >
                         库存
                     </Button>
                     <Popconfirm
-                        title="确定要删除这本书吗？"
+                        title={record.deleted ? "确定要恢复这本书吗？" : "确定要删除这本书吗？删除后用户将无法看到和购买此书籍，但历史订单数据会保留。"}
                         onConfirm={() => handleDeleteBook(record.id)}
                         okText="确定"
                         cancelText="取消"
                     >
                         <Button 
                             type="primary" 
-                            danger 
+                            danger={!record.deleted}
                             size="small" 
                             icon={<DeleteOutlined />}
+                            disabled={false}
                         >
-                            删除
+                            {record.deleted ? '恢复' : '删除'}
                         </Button>
                     </Popconfirm>
                 </Space>

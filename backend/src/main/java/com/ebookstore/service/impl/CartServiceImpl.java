@@ -138,6 +138,25 @@ public class CartServiceImpl implements CartService {//多个repository协同操
         cartItemRepository.save(cartItem);
     }
     
+    @Override
+    @Transactional
+    public int cleanCartByBookId(Long bookId) {
+        if (bookId == null) {
+            throw new IllegalArgumentException("书籍ID不能为空");
+        }
+        
+        // 先查询要删除的购物车项数量，用于返回统计信息
+        List<CartItem> itemsToDelete = cartItemRepository.findByBookId(bookId);
+        int deletedCount = itemsToDelete.size();
+        
+        // 执行删除操作
+        cartItemRepository.deleteByBookId(bookId);
+        
+        System.out.println("书籍ID " + bookId + " 软删除，已清理 " + deletedCount + " 个购物车项");
+        
+        return deletedCount;
+    }
+    
     private CartItemDTO convertToDTO(CartItem cartItem) {
         // 重新从数据库获取最新的书籍信息，确保库存数据是最新的
         Book book = bookRepository.findById(cartItem.getBook().getId())

@@ -33,4 +33,10 @@ public interface CartService {
      * 切换购物车项的选中状态
      */
     void toggleCartItemSelection(Long cartItemId);
+    
+    /**
+     * 根据书籍ID清理所有用户购物车中的该书籍
+     * 用于书籍软删除时自动清理
+     */
+    int cleanCartByBookId(Long bookId);
 } 
