@@ -139,7 +139,10 @@ public class CartServiceImpl implements CartService {//多个repository协同操
     }
     
     private CartItemDTO convertToDTO(CartItem cartItem) {
-        Book book = cartItem.getBook();
+        // 重新从数据库获取最新的书籍信息，确保库存数据是最新的
+        Book book = bookRepository.findById(cartItem.getBook().getId())
+                .orElse(cartItem.getBook());
+                
         return new CartItemDTO(
                 cartItem.getId(),
                 book.getId(),
@@ -147,6 +150,9 @@ public class CartServiceImpl implements CartService {//多个repository协同操
                 book.getAuthor(),
                 book.getPrice(),
                 book.getCover(),
+                book.getStatus(),
+                book.getStock(),
+                book.getIsbn(),
                 cartItem.getQuantity(),
                 cartItem.getSelected()
         );

@@ -31,9 +31,17 @@ export default function CartPage() {
 
   // 检查商品是否可选择（非售罄状态且有库存）
   const isItemSelectable = (item) => {
-    return item.book.status !== 'OUT_OF_STOCK' && 
-           item.book.stock > 0 && 
-           item.book.stock >= item.quantity;
+    // 检查书籍基本状态
+    if (item.book.status === 'OUT_OF_STOCK' || item.book.stock === 0) {
+      return false;
+    }
+    
+    // 检查购物车中的数量是否超过库存
+    if (item.quantity > item.book.stock) {
+      return false;
+    }
+    
+    return true;
   };
 
   // 切换选择状态
@@ -64,14 +72,20 @@ export default function CartPage() {
   // 更新数量
   const handleUpdateQuantity = async (itemId, newQuantity) => {
     const item = cart.find(cartItem => cartItem.id === itemId);
-    if (!item || !isItemSelectable(item)) return;
+    if (!item) return;
+
+    // 检查新数量是否超过库存
+    if (newQuantity > item.book.stock) {
+      message.error(`库存不足，最多只能购买${item.book.stock}本`);
+      return;
+    }
 
     try {
       await updateCartItemQuantity(itemId, newQuantity);
       // 更新选中项目的数量
       setSelectedItems(prev => 
-        prev.map(item => 
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        prev.map(selectedItem => 
+          selectedItem.id === itemId ? { ...selectedItem, quantity: newQuantity } : selectedItem
         )
       );
     } catch (err) {
@@ -183,7 +197,7 @@ export default function CartPage() {
             <Button 
               size="small" 
               onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
-              disabled={quantity <= 1 || !isItemSelectable(record)}
+              disabled={quantity <= 1}
             >
               -
             </Button>
@@ -193,13 +207,13 @@ export default function CartPage() {
             <Button 
               size="small" 
               onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
-              disabled={!isItemSelectable(record) || quantity >= record.book.stock}
+              disabled={quantity >= record.book.stock}
             >
               +
             </Button>
           </Space>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            库存: {record.book.stock}本
+            库存: {record.book.stock !== undefined ? `${record.book.stock}本` : '未知'}
           </div>
         </Space>
       ),
