@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+//
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AdminUserController {
 
-    private final UserService userService;
+    private final UserService userService;//final:不可变引用，变量被初始化后不能再指向其他对象
 
     @GetMapping
     public ResponseEntity<List<UserListDTO>> getAllUsers() {
@@ -40,8 +40,8 @@ public class AdminUserController {
         }
     }
 
-    @GetMapping("/statistics")
-    public ResponseEntity<List<UserListDTO>> getTopSpenders(
+    @GetMapping("/statistics")//映射get请求到…路径
+    public ResponseEntity<List<UserListDTO>> getTopSpenders(//获取指定时间的消费最高用户列表
             @RequestParam String startDate,
             @RequestParam String endDate) {
         List<UserListDTO> topSpenders = userService.getTopSpenders(startDate, endDate);

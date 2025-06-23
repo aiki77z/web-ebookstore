@@ -13,7 +13,7 @@ const AdminUserPage = () => {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, []);//组件挂载时获取数据
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -28,7 +28,7 @@ const AdminUserPage = () => {
             setLoading(false);
         }
     };
-
+    //状态切换处理函数
     const handleToggleStatus = async (userId, currentStatus, username) => {
         const action = currentStatus ? '禁用' : '启用';
         try {
@@ -119,14 +119,14 @@ const AdminUserPage = () => {
             dataIndex: 'active',
             key: 'active',
             width: 100,
-            render: (active, record) => (
-                <Switch
-                    checked={active}
+            render: (active, record) => (//自定义渲染函数
+                <Switch//Antd的switch组件直观显示状态
+                    checked={active}//开关状态，绑定active字段
                     onChange={() => handleToggleStatus(record.id, active, record.username)}
-                    disabled={record.role === 'ADMIN' || loading}
-                    checkedChildren="启用"
-                    unCheckedChildren="禁用"
-                    loading={loading}
+                    disabled={record.role === 'ADMIN' || loading}//禁用条件：管理员/加载中
+                    checkedChildren="启用"//开启状态显示文本
+                    unCheckedChildren="禁用"//关闭状态显示文本
+                    loading={loading}//加载状态
                 />
             ),
         },

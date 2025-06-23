@@ -143,7 +143,7 @@ export const orderApi = {
 
 // 管理员用户管理API
 export const getAllUsers = () => request('/admin/users');
-
+//改变用户状态api调用封装
 export const toggleUserStatus = (userId) => request(`/admin/users/${userId}/status`, {
   method: 'PUT',
 });

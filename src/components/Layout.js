@@ -7,17 +7,17 @@ import authService from '../services/authService';
 const { Sider, Content, Header } = Layout;
 
 export default function LayoutComponent({ children }) {
-    const [userInfo, setUserInfo] = useState(null);
-    const [selectedKeys, setSelectedKeys] = useState(['1']);
+    const [userInfo, setUserInfo] = useState(null); // 当前用户信息
+    const [selectedKeys, setSelectedKeys] = useState(['1']); // 当前选中的菜单项
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
         // 获取用户信息
-        const user = authService.getCurrentUser();
+        const user = authService.getCurrentUser();//获取当前登录的用户
         setUserInfo(user);
 
-        // 根据当前路径设置选中的菜单项
+        // 根据当前路径设置选中的菜单项，高亮
         const path = location.pathname;
         if (path === '/') setSelectedKeys(['1']);
         else if (path === '/cart') setSelectedKeys(['2']);
@@ -45,7 +45,7 @@ export default function LayoutComponent({ children }) {
     const userMenu = (
         <Menu>
             <Menu.Item key="profile" icon={<UserOutlined />}>
-                <Link to="/personal">个人信息</Link>
+                <Link to="/personal">个人信息</Link>{/*使用Link组件实现无刷新页面跳转*/}
             </Menu.Item>
             <Menu.Item key="orders" icon={<SettingOutlined />}>
                 <Link to="/orders">我的订单</Link>
@@ -53,7 +53,7 @@ export default function LayoutComponent({ children }) {
             <Menu.Item key="statistics" icon={<BarChartOutlined />}>
                 <Link to="/statistics">我的统计</Link>
             </Menu.Item>
-            {userInfo && userInfo.role === 'ADMIN' && (
+            {userInfo && userInfo.role === 'ADMIN' && (//根据是否管理员判断是否显示菜单
                 <>
                     <Menu.Item key="admin-books" icon={<BookOutlined />}>
                         <Link to="/admin/books">书籍管理</Link>
@@ -112,7 +112,7 @@ export default function LayoutComponent({ children }) {
                             </div>
                         </Dropdown>
                     ) : (
-                        <Button type="primary" onClick={() => navigate('/login')}>
+                        <Button type="primary" onClick={() => navigate('/login')}>{/*用navigate通过函数调用出发；重定向*/}
                             登录
                         </Button>
                     )}

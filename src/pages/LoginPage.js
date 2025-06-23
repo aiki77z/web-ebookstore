@@ -24,6 +24,8 @@ const LoginPage = () => {
         console.log('前端开始处理登录，输入值:', values);
         setLoading(true);
         try {
+            //调用authService的login方法进行登录操作
+            //await暂停函数完成直到promise完成（异步）
             const result = await authService.login({
                 username: values.username,
                 password: values.password

@@ -17,8 +17,8 @@ import java.util.List;
 /**
  * 统计控制器
  */
-@RestController
-@RequestMapping("/api/statistics")
+@RestController//标识为REST控制器，自动序列化返回json
+@RequestMapping("/api/statistics")//设置基础路径为/api/statistics
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class StatisticsController {
     
@@ -30,6 +30,7 @@ public class StatisticsController {
      */
     @GetMapping("/books")
     public ResponseEntity<?> getBookSalesStatistics(
+            //接收url参数 startDate和endDate 并将其解析为LocalDateTime类型的对象
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             HttpSession session) {
@@ -40,7 +41,7 @@ public class StatisticsController {
             System.out.println("结束时间: " + endDate);
             
             // 检查管理员权限
-            UserInfoDTO currentUser = (UserInfoDTO) session.getAttribute("currentUser");
+            UserInfoDTO currentUser = (UserInfoDTO) session.getAttribute("currentUser");//获取用户会话信息
             System.out.println("当前用户: " + (currentUser != null ? currentUser.getUsername() : "null"));
             System.out.println("用户角色: " + (currentUser != null ? currentUser.getRole() : "null"));
             
@@ -51,7 +52,7 @@ public class StatisticsController {
             if (!"ADMIN".equals(currentUser.getRole())) {
                 return ResponseEntity.status(403).body("只有管理员可以查看书籍销量统计");
             }
-            
+            //调用统计服务的getBookSalesStatistics方法 获取统计数据
             List<BookSalesStatisticsDto> statistics = statisticsService.getBookSalesStatistics(startDate, endDate);
             System.out.println("查询到的统计数据数量: " + (statistics != null ? statistics.size() : 0));
             return ResponseEntity.ok(statistics);
@@ -89,7 +90,8 @@ public class StatisticsController {
             if (!"ADMIN".equals(currentUser.getRole())) {
                 return ResponseEntity.status(403).body("只有管理员可以查看用户消费统计");
             }
-            
+
+            //返回UserConsumptionStatisticsDto列表
             List<UserConsumptionStatisticsDto> statistics = statisticsService.getUserConsumptionStatistics(startDate, endDate);
             System.out.println("查询到的用户消费统计数据数量: " + (statistics != null ? statistics.size() : 0));
             return ResponseEntity.ok(statistics);
@@ -105,6 +107,7 @@ public class StatisticsController {
      * 获取个人购书统计 - 用户功能
      */
     @GetMapping("/personal")
+    //responseEntity响应体类型不确定（DTO/错误信息）
     public ResponseEntity<?> getPersonalStatistics(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,

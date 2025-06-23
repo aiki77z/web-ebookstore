@@ -44,7 +44,7 @@ public class UserAuth {
     @OneToOne(mappedBy = "userAuth", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private User user;
     
-    @PrePersist
+    @PrePersist//实体被持久化之前需要自动执行
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }

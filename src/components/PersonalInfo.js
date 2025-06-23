@@ -10,6 +10,7 @@ export default function PersonalInfo() {
   const [initialValues, setInitialValues] = useState(null);
 
   // 组件加载时获取用户信息
+  //处理副作用，如数据获取、订阅、手动修改DOM等
   useEffect(() => {
     fetchUserInfo();
   }, []);

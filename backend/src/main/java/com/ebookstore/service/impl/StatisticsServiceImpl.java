@@ -71,6 +71,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
         
         // 计算平均价格并排序
+        //peek:观察操作，不改变流的元素，用于调试和日志记录
         List<BookSalesStatisticsDto> result = bookStatisticsMap.values().stream()
                 .peek(dto -> {
                     if (dto.getTotalSales() > 0) {
@@ -109,7 +110,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             });
             
             // 累计订单数和消费金额
-            dto.setTotalOrders(dto.getTotalOrders() + 1);
+            dto.setTotalOrders(dto.getTotalOrders() + 1);//每个订单加1
             dto.setTotalConsumption(dto.getTotalConsumption().add(order.getTotalAmount()));
             
             // 累计购书数量
@@ -122,14 +123,18 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 计算平均订单价值并排序
         List<UserConsumptionStatisticsDto> result = userStatisticsMap.values().stream()
                 .peek(dto -> {
+                    //检查用户的订单拿书是否大于0
                     if (dto.getTotalOrders() > 0) {
+                        //计算平均订单价值
                         dto.setAverageOrderValue(dto.getTotalConsumption().divide(
                                 BigDecimal.valueOf(dto.getTotalOrders()), 2, RoundingMode.HALF_UP));
                     } else {
                         dto.setAverageOrderValue(BigDecimal.ZERO);
                     }
                 })
-                .sorted((a, b) -> b.getTotalConsumption().compareTo(a.getTotalConsumption())) // 按消费金额降序
+                //排序：按总消费金额降序
+                .sorted((a, b) -> b.getTotalConsumption().compareTo(a.getTotalConsumption()))
+                //将流收集为List
                 .collect(Collectors.toList());
         
         return result;

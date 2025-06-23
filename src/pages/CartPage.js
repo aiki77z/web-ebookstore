@@ -15,11 +15,12 @@ export default function CartPage() {
     checkoutCart
   } = useContext(CartContext);
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);//在组件中添加状态的钩子函数
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
   // 组件加载时获取购物车数据
+  //依赖项变化时重新执行
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
@@ -103,7 +104,7 @@ export default function CartPage() {
       message.error('删除失败');
     }
   };
-
+//useMemo 缓存计算结果，依赖变化时才重新计算
   const columns = useMemo(() => [
     {
       title: (

@@ -49,8 +49,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void toggleUserStatus(Long userId) {
+        //通过userID查找用户认证信息
         UserAuth userAuth = userAuthRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        //翻转用户活跃状态
         userAuth.setActive(!userAuth.getActive());
         userAuthRepository.save(userAuth);
     }
