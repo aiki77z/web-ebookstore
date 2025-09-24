@@ -2,8 +2,8 @@
 -- 实现User和UserAuth分离，符合函数依赖和范式要求
 
 -- 创建数据库
-CREATE DATABASE IF NOT EXISTS ebookstore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE ebookstore;
+CREATE DATABASE IF NOT EXISTS ebookstorehw1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE ebookstorehw1;
 
 -- 用户认证表（UserAuth）
 -- 存储用户认证相关信息，与用户基本信息分离
@@ -135,13 +135,16 @@ INSERT INTO users (name, email, address, phone, auth_id) VALUES
 ('杰瑞', 'jerry@example.com', '广州市天河区', '13800000003', 3);
 
 -- 插入书籍数据
-INSERT INTO books (title, author, price, description, cover, status) VALUES                                                                     ('藤井 風Help Ever Hurt Never钢琴谱', '藤井 風', 165.00, '这是藤井 風的钢琴谱集，收录了Help Ever Hurt Never专辑中的经典曲目。适合中级到高级钢琴演奏者。', '/images/fujikaze.jpg', 'AVAILABLE'),
-('三体', '刘慈欣', 93.00, '科幻小说的中国里程碑之作，获得雨果奖的第一部亚洲作品。小说讲述了地球文明与三体文明的惊心动魄的第一次接触。', '/images/threebody.jpg', 'AVAILABLE'),
-('JOJO的奇妙冒险 第五部', '荒木飞吕彦', 200.00, '《JOJO的奇妙冒险》系列第五部，讲述了乔鲁诺·乔巴纳在意大利黑帮中的冒险故事。', '/images/jojo.jpg', 'AVAILABLE'),
-('素食者', '韩江', 37.00, '一部令人震撼的当代韩国小说，讲述了一个放弃肉食的女性的故事，展现了人性的复杂面向。', '/images/vegetarian.jpg', 'AVAILABLE'),
-('哈利波特', 'J.K.罗琳', 375.00, '全球畅销的魔法世界系列小说，讲述了男孩哈利·波特在霍格沃茨魔法学校的冒险故事。', '/images/harrypotter.jpg', 'AVAILABLE'),
-('长日将尽', '石黑一雄', 59.00, '诺贝尔文学奖得主石黑一雄的代表作，通过一位管家的回忆，展现了英国贵族社会的没落。', '/images/remains.jpg', 'AVAILABLE'),
-('孤独星球 埃及', '澳大利亚Lonely Planet公司', 69.30, '本书"计划你的行程"帮助旅行者打造适合自己的出行攻略，使旅途更轻松；并策划了"乘船游览尼罗河""红海潜水"专题，在水上玩转埃及。"在路上"分为"开罗""尼罗河谷北部""卢克索""锡瓦绿洲和西部沙漠"等11章，带你全方位走入这片奇幻之地。"了解埃及"向你介绍了这个国家的背景知识，"生存指南"涉及在埃及可能会遇到的衣食住行问题，极具参考价值。还有特别策划的"埃及博物馆"章节，全面详细地介绍了各场馆及展品的历史，推荐内涵丰富的展品及合理的游览路线。', '/images/lonelyplanet.jpg', 'AVAILABLE'),                                                                         ('不能承受的生命之轻', '米兰·昆德拉', 88.00, '依托二十世纪六十年代捷克斯洛伐克的历史剧变，以托马斯与特蕾莎偶然而宿命般的爱情为主线展开故事，不仅仅是描述几对男女感情上的纠葛，也不仅仅是书写个人命运在大的境遇变迁中的沉浮、个人在变革时刻的选择，更是一部层次丰富、意象繁复的哲理小说，从永恒轮回的谵妄之下人的生命分量几何这一带着神秘感的疑问开篇，随着不断穿插的书中人物的生活走向、所思所想提出了生命之轻与重、灵与肉的相对论。', '/images/life.jpg', 'AVAILABLE');
+-- 方法一：修改 INSERT 语句（推荐）
+INSERT INTO books (title, author, price, description, cover, status, deleted, stock, isbn) VALUES
+                                                                                               ('藤井 風Help Ever Hurt Never钢琴谱', '藤井 風', 165.00, '这是藤井 風的钢琴谱集...', '/images/fujikaze.jpg', 'AVAILABLE', FALSE, 100, '9787020024759'),
+                                                                                               ('三体', '刘慈欣', 93.00, '科幻小说的中国里程碑之作...', '/images/threebody.jpg', 'AVAILABLE', FALSE, 100, '9787536692930'),
+                                                                                               ('JOJO的奇妙冒险 第五部', '荒木飞吕彦', 200.00, '《JOJO的奇妙冒险》系列第五部...', '/images/jojo.jpg', 'AVAILABLE', FALSE, 100, '9784088742588'),
+                                                                                               ('素食者', '韩江', 37.00, '一部令人震撼的当代韩国小说...', '/images/vegetarian.jpg', 'AVAILABLE', FALSE, 100, '9788954655927'),
+                                                                                               ('哈利波特', 'J.K.罗琳', 375.00, '全球畅销的魔法世界系列小说...', '/images/harrypotter.jpg', 'AVAILABLE', FALSE, 100, '9787020139316'),
+                                                                                               ('长日将尽', '石黑一雄', 59.00, '诺贝尔文学奖得主石黑一雄的代表作...', '/images/remains.jpg', 'AVAILABLE', FALSE, 100, '9787532761968'),
+                                                                                               ('孤独星球 埃及', '澳大利亚Lonely Planet公司', 69.30, '本书"计划你的行程"帮助旅行者...', '/images/lonelyplanet.jpg', 'AVAILABLE', FALSE, 100, '9787559642868'),
+                                                                                               ('不能承受的生命之轻', '米兰·昆德拉', 88.00, '依托二十世纪六十年代捷克斯洛伐克...', '/images/life.jpg', 'AVAILABLE', FALSE, 100, '9787532761975');
 -- 数据库设计说明：
 -- 1. 函数依赖分析：
 --    user_auth: username → password_hash, role, active

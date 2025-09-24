@@ -1,5 +1,5 @@
 -- 为书籍表添加库存量和ISBN字段
-USE ebookstore;
+USE ebookstorehw1;
 
 -- 添加库存量字段，默认值为100
 ALTER TABLE books ADD COLUMN stock INT NOT NULL DEFAULT 100 COMMENT '库存量';

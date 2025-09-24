@@ -1,7 +1,7 @@
 -- 为books表添加软删除功能的数据库迁移脚本
 -- 执行前请备份数据库
 
-USE ebookstore;
+USE ebookstorehw1;
 
 -- 添加deleted字段（软删除标记）
 ALTER TABLE books ADD COLUMN deleted BOOLEAN NOT NULL DEFAULT FALSE COMMENT '软删除标记，true表示已删除';
