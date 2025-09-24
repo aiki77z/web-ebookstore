@@ -11,6 +11,7 @@ import com.ebookstore.entity.Book;
 import com.ebookstore.repository.CartItemRepository;
 import com.ebookstore.repository.OrderRepository;
 import com.ebookstore.repository.BookRepository;
+import com.ebookstore.repository.UserRepository;
 import com.ebookstore.service.OrderService;
 import com.ebookstore.service.UserService;
 import com.ebookstore.service.BookService;
@@ -29,21 +30,24 @@ import java.util.Map;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    
+
     @Autowired
     private OrderRepository orderRepository;
-    
+
     @Autowired
     private CartItemRepository cartItemRepository;
-    
+
     @Autowired
     private UserService userService;
 
     @Autowired
     private BookRepository bookRepository;
-    
+
     @Autowired
     private BookService bookService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public List<OrderItemDTO> getOrders() {
@@ -58,26 +62,34 @@ public class OrderServiceImpl implements OrderService {
 
         return orderItems;
     }
-    
+
     @Override
     public OrderDTO getOrderById(Long id) {
         User user = userService.getCurrentUser();
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的订单"));
-        
+
         // 安全检查
         if (!order.getUser().getId().equals(user.getId())) {
             throw new SecurityException("无权查看此订单");
         }
-        
+
         return convertToOrderDTO(order);
     }
-    
+
     @Override
     @Transactional
     public List<OrderItemDTO> createOrder(List<Long> cartItemIds) {
         User user = userService.getCurrentUser();
-                
+        return createOrderForUser(user.getId(), cartItemIds);
+    }
+
+    @Override
+    @Transactional
+    public List<OrderItemDTO> createOrderForUser(Long userId, List<Long> cartItemIds) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
+
         // 获取要购买的购物车项
         List<CartItem> selectedItems;
         if (cartItemIds == null || cartItemIds.isEmpty()) {
@@ -89,25 +101,25 @@ public class OrderServiceImpl implements OrderService {
                     .filter(item -> item.getUser().getId().equals(user.getId()))
                     .collect(Collectors.toList());
         }
-                
+
         if (selectedItems.isEmpty()) {
             throw new IllegalArgumentException("没有可购买的商品");
         }
-        
+
         // 先检查所有商品的库存
         for (CartItem cartItem : selectedItems) {
             if (!bookService.checkStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
                 throw new IllegalArgumentException("商品《" + cartItem.getBook().getTitle() + "》库存不足，需要" + cartItem.getQuantity() + "本");
             }
         }
-                
+
         // 创建订单
         Order order = new Order();
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("COMPLETED"); // 直接设置为已完成状态
         order.setShippingAddress(user.getAddress()); // 设置配送地址为用户地址
-        
+
         // 计算总金额并添加订单项
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem cartItem : selectedItems) {
@@ -116,29 +128,29 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(cartItem.getBook().getPrice());
             orderItem.setSubtotal(cartItem.getBook().getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
-            
+
             // 使用辅助方法建立关系
             order.addOrderItem(orderItem);
             totalAmount = totalAmount.add(orderItem.getSubtotal());
         }
-        
+
         // 设置订单总金额
         order.setTotalAmount(totalAmount);
-        
+
         try {
             // 保存订单及订单项
             order = orderRepository.save(order);
-            
+
             // 减少库存
             for (CartItem cartItem : selectedItems) {
                 if (!bookService.reduceStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
                     throw new RuntimeException("减少《" + cartItem.getBook().getTitle() + "》库存失败");
                 }
             }
-            
+
             // 删除购物车中的相关项目
             cartItemRepository.deleteAll(selectedItems);
-            
+
             // 转换返回数据
             return order.getItems().stream()
                     .map(this::convertToDTO)
@@ -149,11 +161,11 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("创建订单或删除购物车项失败", e);
         }
     }
-    
+
     private OrderItemDTO convertToDTO(OrderItem orderItem) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String orderDate = orderItem.getOrder().getOrderDate().format(formatter);
-        
+
         return new OrderItemDTO(
                 orderItem.getId(),
                 orderItem.getBook().getId(),
@@ -165,7 +177,7 @@ public class OrderServiceImpl implements OrderService {
                 orderDate
         );
     }
-    
+
     private OrderDTO convertToOrderDTO(Order order) {
         UserInfoDTO userDto = new UserInfoDTO(
                 order.getUser().getId(),
@@ -176,7 +188,7 @@ public class OrderServiceImpl implements OrderService {
                 order.getUser().getPhone(),
                 order.getUser().getAddress()
         );
-        
+
         return new OrderDTO(
                 order.getId(),
                 order.getOrderDate(),
@@ -194,6 +206,14 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public List<OrderItemDTO> createDirectOrder(List<Map<String, Object>> items) {
         User user = userService.getCurrentUser();//函数依赖
+        return createDirectOrderForUser(user.getId(), items);
+    }
+
+    @Override
+    @Transactional
+    public List<OrderItemDTO> createDirectOrderForUser(Long userId, List<Map<String, Object>> items) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
 
         // 创建订单
         Order order = new Order();
@@ -206,7 +226,7 @@ public class OrderServiceImpl implements OrderService {
         for (Map<String, Object> item : items) {
             Long bookId = Long.valueOf(item.get("bookId").toString());
             Integer quantity = Integer.valueOf(item.get("quantity").toString());
-            
+
             if (!bookService.checkStock(bookId, quantity)) {
                 Book book = bookRepository.findById(bookId)
                         .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
@@ -236,23 +256,23 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setTotalAmount(totalAmount);
-        
+
         try {
             // 保存订单
             order = orderRepository.save(order);
-            
+
             // 减少库存
             for (Map<String, Object> item : items) {
                 Long bookId = Long.valueOf(item.get("bookId").toString());
                 Integer quantity = Integer.valueOf(item.get("quantity").toString());
-                
+
                 if (!bookService.reduceStock(bookId, quantity)) {
                     Book book = bookRepository.findById(bookId)
                             .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
                     throw new RuntimeException("减少《" + book.getTitle() + "》库存失败");
                 }
             }
-        
+
             // 转换返回数据
             return order.getItems().stream()
                     .map(this::convertToDTO)

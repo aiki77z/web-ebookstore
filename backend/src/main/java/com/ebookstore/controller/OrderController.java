@@ -11,6 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ebookstore.dto.AsyncOrderRequestMessage;
 
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
@@ -26,15 +30,26 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/orders")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class OrderController {
+    @Value("${ebookstore.kafka.topic.order-request}")
+    private String orderRequestTopic;
+
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public OrderController(OrderService orderService, AuthService authService, KafkaTemplate<String, String> kafkaTemplate) {
+        this.orderService = orderService;
+        this.authService = authService;
+        this.kafkaTemplate = kafkaTemplate;
+    }
     @Autowired
     private CartService cartService;//依赖注入：自动注入CartService实例 业务逻辑交给
-    
+
     @Autowired
     private OrderService orderService;//依赖注入：自动注入OrderService实例 业务逻辑交给
-    
+
     @Autowired
     private AuthService authService;//依赖注入：自动注入AuthService实例 业务逻辑交给
-    
+
     @GetMapping//order实体->OrderItemDTO->响应json返回给前端
     public ResponseEntity<Map<String, Object>> getOrders(HttpSession session) {
         Map<String, Object> response = new HashMap<>();
@@ -45,19 +60,19 @@ public class OrderController {
                 response.put("message", "用户未登录");
                 return ResponseEntity.status(401).body(response);
             }
-            
+
             List<OrderItemDTO> items = orderService.getOrders();//函数依赖 获取订单列表
             response.put("success", true);
             response.put("data", items);
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "获取订单失败：" + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }
-    
+
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchOrders(
             @RequestParam(required = false) String bookName,
@@ -75,7 +90,7 @@ public class OrderController {
 
             LocalDateTime start = null;
             LocalDateTime end = null;
-            
+
             if (startDate != null && !startDate.isEmpty()) {
                 start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             }
@@ -147,7 +162,7 @@ public class OrderController {
 
             LocalDateTime start = null;
             LocalDateTime end = null;
-            
+
             if (startDate != null && !startDate.isEmpty()) {
                 start = LocalDateTime.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             }
@@ -166,7 +181,7 @@ public class OrderController {
             return ResponseEntity.status(500).body(response);
         }
     }
-    
+
     @GetMapping("/{id}")//路径参数
     public ResponseEntity<Map<String, Object>> getOrderById(
             @PathVariable Long id,
@@ -179,12 +194,12 @@ public class OrderController {
                 response.put("message", "用户未登录");
                 return ResponseEntity.status(401).body(response);
             }
-            
+
             OrderDTO order = orderService.getOrderById(id);//函数依赖 获取订单详情
             response.put("success", true);
             response.put("data", order);
             return ResponseEntity.ok(response);//Oreder实体->OrderDTO->响应json返回给前端
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "获取订单详情失败：" + e.getMessage());
@@ -205,9 +220,9 @@ public class OrderController {
                 response.put("message", "用户未登录");
                 return ResponseEntity.status(401).body(response);
             }
-            
+
             List<OrderItemDTO> orderItems;
-            
+
             // 处理直接购买的情况
             if (payload.containsKey("directBuy") && Boolean.TRUE.equals(payload.get("directBuy"))) {
                 List<Map<String, Object>> items = (List<Map<String, Object>>) payload.get("items");
@@ -255,15 +270,62 @@ public class OrderController {
 
                 orderItems = orderService.createOrder(cartItemIds);//函数依赖
             }
-            
+
             response.put("success", true);
             response.put("message", "订单创建成功");
             response.put("data", orderItems);
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "创建订单失败：" + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/create-async")
+    public ResponseEntity<Map<String, Object>> createOrderAsync(
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UserInfoDTO currentUser = authService.getCurrentUser(session);
+            if (currentUser == null) {
+                response.put("success", false);
+                response.put("message", "用户未登录");
+                return ResponseEntity.status(401).body(response);
+            }
+
+            System.out.println("[HTTP] /api/orders/create-async received from userId=" + currentUser.getId() + ", payload=" + payload);
+
+            AsyncOrderRequestMessage message = new AsyncOrderRequestMessage();
+            message.setUserId(currentUser.getId());
+            boolean directBuy = Boolean.TRUE.equals(payload.get("directBuy"));
+            message.setDirectBuy(directBuy);
+            if (directBuy) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> items = (List<Map<String, Object>>) payload.get("items");
+                message.setDirectItems(items);
+            } else {
+                @SuppressWarnings("unchecked")
+                List<Integer> ids = (List<Integer>) payload.get("cartItemIds");
+                if (ids != null) {
+                    List<Long> longIds = ids.stream().map(Integer::longValue).collect(java.util.stream.Collectors.toList());
+                    message.setCartItemIds(longIds);
+                }
+            }
+
+            String json = objectMapper.writeValueAsString(message);
+            kafkaTemplate.send(orderRequestTopic, json);
+            System.out.println("[Kafka][Producer] order-requests <- " + json);
+
+            response.put("success", true);
+            response.put("message", "下单请求已提交，正在异步处理");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "提交异步下单失败: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }

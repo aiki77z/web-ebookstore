@@ -67,10 +67,10 @@ export const userApi = {
 export const bookApi = {
   // 获取所有书籍
   getBooks: () => request('/books'),
-  
+
   // 获取单本书籍详情
   getBook: (id) => request(`/books/${id}`),
-  
+
   // 搜索书籍
   searchBooks: (query) => request(`/books/search?query=${encodeURIComponent(query)}`),
 };
@@ -112,7 +112,7 @@ export const orderApi = {
     if (params.bookName) queryParams.append('bookName', params.bookName);
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
-    
+
     return request(`/orders/search?${queryParams.toString()}`);
   },
 
@@ -125,12 +125,18 @@ export const orderApi = {
     if (params.bookName) queryParams.append('bookName', params.bookName);
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
-    
+
     return request(`/orders/admin/search?${queryParams.toString()}`);
   },
 
   // 创建订单
   createOrder: (orderData) => request('/orders/create', {
+    method: 'POST',
+    body: JSON.stringify(orderData),
+  }),
+
+  // 创建订单（异步，通过Kafka）
+  createOrderAsync: (orderData) => request('/orders/create-async', {
     method: 'POST',
     body: JSON.stringify(orderData),
   }),
@@ -154,35 +160,35 @@ export const getUserStatistics = (startDate, endDate) => request(`/admin/users/s
 export const adminBookApi = {
   // 获取所有书籍（分页）
   getBooks: (page = 0, size = 10) => request(`/admin/books?page=${page}&size=${size}`),
-  
+
   // 获取书籍详情
   getBook: (id) => request(`/admin/books/${id}`),
-  
+
   // 添加书籍
   addBook: (bookData) => request('/admin/books', {
     method: 'POST',
     body: JSON.stringify(bookData),
   }),
-  
+
   // 更新书籍
   updateBook: (id, bookData) => request(`/admin/books/${id}`, {
     method: 'PUT',
     body: JSON.stringify(bookData),
   }),
-  
+
   // 删除书籍
   deleteBook: (id) => request(`/admin/books/${id}`, {
     method: 'DELETE',
   }),
-  
+
   // 搜索书籍
   searchBooks: (keyword) => request(`/admin/books/search?keyword=${encodeURIComponent(keyword)}`),
-  
+
   // 更新书籍库存
   updateStock: (id, stock) => request(`/admin/books/${id}/stock?stock=${stock}`, {
     method: 'PUT',
   }),
-  
+
   // 检查书籍库存
   checkStock: (id, quantity = 1) => request(`/admin/books/${id}/stock?quantity=${quantity}`),
 };

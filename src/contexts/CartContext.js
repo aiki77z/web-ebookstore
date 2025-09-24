@@ -14,7 +14,7 @@ export function CartProvider({ children }) {
     try {
       setLoading(true);
       const response = await cartApi.getCart();
-      
+
       if (response && response.success) {
         setCart(response.data || []);
       } else {
@@ -33,7 +33,7 @@ export function CartProvider({ children }) {
     try {
       setLoading(true);
       const response = await orderApi.getOrders();
-      
+
       if (response && response.success) {
         setOrders(response.data || []);
       } else {
@@ -55,7 +55,7 @@ export function CartProvider({ children }) {
         bookId: book.id,
         quantity: quantity
       });
-      
+
       if (response && response.success) {
         await fetchCart(); // 重新获取购物车数据
         return response.data;
@@ -75,7 +75,7 @@ export function CartProvider({ children }) {
     try {
       setLoading(true);
       const response = await cartApi.removeFromCart(cartItemId);
-      
+
       if (response && response.success) {
         await fetchCart(); // 重新获取购物车数据
         return response.data;
@@ -95,7 +95,7 @@ export function CartProvider({ children }) {
     try {
       setLoading(true);
       const response = await cartApi.updateCartItemQuantity(cartItemId, quantity);
-      
+
       if (response && response.success) {
         await fetchCart(); // 重新获取购物车数据
         return response.data;
@@ -114,14 +114,14 @@ export function CartProvider({ children }) {
   const directPurchase = useCallback(async (book, quantity = 1) => {
     try {
       setLoading(true);
-      const response = await orderApi.createOrder({
+      const response = await orderApi.createOrderAsync({
         directBuy: true,
         items: [{
           bookId: book.id,
           quantity: quantity
         }]
       });
-      
+
       if (response && response.success) {
         await fetchOrders(); // 重新获取订单列表
         return response.data;
@@ -140,19 +140,19 @@ export function CartProvider({ children }) {
   const checkoutCart = useCallback(async (selectedItems) => {
     try {
       setLoading(true);
-      
+
       if (!selectedItems || selectedItems.length === 0) {
         throw new Error('请选择要购买的商品');
       }
 
       // 使用购物车项ID来创建订单
       const cartItemIds = selectedItems.map(item => item.id);
-      
-      const response = await orderApi.createOrder({
+
+      const response = await orderApi.createOrderAsync({
         directBuy: false,
         cartItemIds: cartItemIds
       });
-      
+
       if (response && response.success) {
         await Promise.all([
           fetchCart(),   // 重新获取购物车数据
@@ -190,8 +190,8 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
+      <CartContext.Provider value={value}>
+        {children}
+      </CartContext.Provider>
   );
 }
