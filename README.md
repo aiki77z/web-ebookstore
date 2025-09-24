@@ -1,246 +1,70 @@
-# web-ebookstore
-### 互联网应用开发技术-迭代1 细则  
-**日期**：2025-03-18  
+# Getting Started with Create React App
 
-#### 1. 迭代要求-前端开发  
-请使用 React、React-Router 和 Ant Design 开发在线书店的前端工程，需满足以下要求：  
-- **A. 页面开发**  
-  开发包含主页、书籍详情页、购物车页和个人信息页，功能类似样例程序，可通过左侧菜单完成页面跳转。可参考样例代码，但需理解原理后编写，文档末尾附样例页面参考。  
-- **B. 数据处理**  
-  页面数据可在前端硬编码，无需从后台获取。建议将数据集中存放在 App.js 等文件中，便于未来维护。  
-- **C. 功能暂置**  
-  书籍详情页“加入购物车”“直接购买”按钮、个人信息页“保存”按钮等需与后端交互的功能，暂不对按钮点击动作做响应。  
-- **D. 设计原则**  
-  遵循 React 构件式开发原则，做好前端工程分层管理。  
-- **E. 页面美化**  
-  适度使用 CSS 框架美化页面，操作方式需符合电子商务网站一般习惯，避免过于另类。  
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-#### 2. 提交要求  
-- **A. 提交内容**  
-  提交前端工程源代码，仅包含 `src` 目录和 `package.json` 文件，无需压缩提交 `node_module` 子目录。  
+## Available Scripts
 
-#### 3. 评分标准（共20分）  
-- **A. 功能（8分）**  
-  - i. 正常展示4个页面内容，每个页面2分。  
-  - ii. 答辩时需解释代码功能，若解释不清，酌情扣1-4分。  
-- **B. 设计原则（10分）**  
-  评分主观性较强，需阐述设计理由（可参考样例代码设计）：  
-  - i. 遵循 React 构件式开发原则，构件设计合理，2分。  
-  - ii. 正确使用 React Router 实现4个页面跳转，2分。  
-  - iii. 恰当使用 Ant Design 构件开发，页面协调美观且代码易维护，2分。  
-  - iv. 工程结构合理，可维护性强，2分。  
-- **C. 用户体验（2分）**  
-  - i. 页面美观，符合用户操作习惯。此部分非重点，避免过度设计。  
+In the project directory, you can run:
 
-#### 4. 附：参考页面  
-**样例页面截图说明**（文档末尾图片内容文字化描述）：  
-- **主页**：展示“Book Store”标题，书籍列表包含《My Cat》《全世界读到这本书》等，显示价格（如¥136.2、¥51.3）。  
-- **书籍详情页**：以《Animal Farm》为例，显示书名、作者（George Orwell）、出版社（Socker and Warturg）、价格（$20）、库存状态（Out of Stock），以及“Add to Shopping Cart”“Purchase Now”按钮。  
-- **购物车页**：显示用户“Hi, Tom”，购物车条目包含书籍名称、价格、删除按钮，总金额$77.52。  
-- **个人信息页**：显示用户“Hi, Tom”，个人信息包括姓名（Cat）、社交媒体（Twitter@TomCat）、头像备注（This is a naughty Cat）及“Click to pad”按钮。  
+### `npm start`
 
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-**说明**：  
-1. 保留原文关键标记序号（如），对应段落引用关系不变。  
-2. 采用分级标题（###、####）和列表（-）优化排版，突出结构层次。  
-3. 代码路径（如 `src` `package.json`）使用 monospace 字体风格，增强可读性。  
-4. 图片内容以文字描述替代，保留核心信息（如页面元素、按钮功能）。
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
+### `npm test`
 
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
+### `npm run build`
 
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-###############################################################################
-# 互联网应用开发技术-迭代2 细则
-## 1. 迭代要求-前端&后端通信
-请使用 React、React-Router(或相关框架)和 Ant Design(或相关框架)来开发你的在线书店的前端工程，使用 Spring Boot 开发你的在线书店的后端工程，并使用 fetch API 实现前后端工程的通信。具体应该满足以下要求：  
-- **A. 前端**：在迭代一的基础上，整合几次平时作业的内容，将开发的前端页面互相联动起来，例如将书籍放入购物车后就可以在购物车中看到相应的书籍；下订单后在订单列表页就可以看到相应的订单。  
-- **B. 后端**：能够响应前端发送的获取图书列表、获取图书详情、获取订单列表等功能，并且返回用户需要的数据或处理结果。如果时间充裕，完成后端响应前端发送的放入购物车、下订单请求，同样返回用户需求的数据或处理结果。关于购物车的实现，建议采取存储数据库的方式，因为购物网站通常的用户体验是购物车信息在持久化存储的，即用户即使登出网站，下次登录时购物车数据依然存在。  
-- **C. 前后端通信**：采用 Ajax 异步通信方式，前端展示的数据都通过向后端请求获得，后端从 MySQL 数据库中读取数据，并以 JSON 方式发送给前端。  
-- **D. 数据库访问**：后端使用 Spring JDBC Data 方式访问数据库，若已使用 Spring JPA 访问数据库，则无需修改。  
-- **E. 数据库设计**：库结构和表结构合理，尤其注意上课提到的几个避坑问题。  
-- **F. 总体要求**：迭代二是前后端贯通的系统，前端展示的数据均来自于后端的数据库中，用户在前端执行的操作也需要反应到后端的数据库中。  
+### `npm run eject`
 
-## 2. 提交要求  
-- **A.** 提交 React 工程的源代码及 Spring Boot 源代码。注意：前端勿压缩提交 node_module 子目录，后端勿压缩提交 lib 子目录。  
-- **B.** 提交数据库设计的 SQL 脚本。  
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-## 3. 评分标准：共20分  
-### A. 功能(4分)  
-1. 前端页面互相联动，将书籍放入购物车后可在购物车中看到相应书籍；下订单后在订单列表页可看到相应订单（2分）。  
-2. 前端展示数据来自于后端访问数据库得到的结果（2分）。  
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-### B. 设计方案(8分)  
-1. 前端工程结构合理，分为 Component、Service、View、Util 等包进行管理（可根据自身设计定制裁剪，但需逐一解释设计理由）（2分）。  
-2. 后端工程结构合理，至少将实体类和 Controller 类分离开，放在不同的包中（2分）。  
-3. 前后端通过异步方式通信，传递 JSON 数据且格式设计合理（2分）。  
-4. 对照代码详述从前端 JavaScript 发出请求→后端 Java 处理→访问数据库→后端 Java 抽象和组装数据并发送回前端→前端刷新页面展示的全过程（2分）。  
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-### C. 数据库设计(4分)  
-1. 库结构和表结构设计合理（如 Order 和 OrderItem 外键关联、User 和 UserAuth 外键关联正确）（2分）。  
-2. 详述数据库设计方案，包括主键类型、字段类型、字段长度、字段约束等设计依据（2分）。  
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-### D. 数据库访问(4分)  
-1. 使用 Spring Data JDBC 或 JPA 正确连接并访问数据库，能够解释建立数据库连接和数据持久化操作的完整处理过程（2分）。  
-2. 使用 Spring Data JDBC 时正确编写 SQL 语句实现访问逻辑；使用 Spring JPA 时正确使用 Repository 中的方法或编写定制持久化方法（1分）。  
-3. 无论使用何种方式，均将数据库中的数据抽象成实体类后再处理（1分）。  
+## Learn More
 
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-#########################################################################################################################################
-### 课程大作业迭代3要求细则
-#### 2025-05-16
-#### 互联网应用开发技术-迭代3 细则
-1. **迭代要求-后端数据库设计与访问优化**
-    - 请使用React、React-Router和Ant Design来开发在线书店的前端工程，使用Spring Boot开发后端工程，并使用fetch API实现前后端通信。对后端数据库的设计和访问机制进行优化，具体要求如下：
-    - **A. 用户登录功能和登录状态检查功能优化**
-        - i. 在迭代二基础上，优化用户登录功能，前端将用户输入的用户名和密码等登录信息发送到后端，后端与MySQL数据库中存储的用户名与密码进行校验，将检查结果返回前端。
-        - ii. 在后端Session中记录前端用户是否登录的信息，对用户发送的请求进行拦截，除login链接外，其他链接都需检验用户是否登录，只有登录用户才能访问，否则重定向到login页面。
-        - iii. 实现用户登录和状态检查时，参照上课讲解方式说明如何确保用户密码安全。验收时告诉助教目前实现的用户登录功能存在的安全风险及应对想法。
-    - **B. 系统架构优化**
-        - i. 优化后端工程架构，体现合理分层架构，至少包括控制器层、服务层、数据访问对象层、实体层等，实现接口与实现分离，并通过Spring实现依赖注入。
-        - ii. 验收时告诉助教至少分为上述各层的原因、接口与实现分离的原因，解释Spring依赖注入及其好处。运用Spring JPA框架进行数据库访问，验收时说明实体类ID的生成方式、设置cascade关联操作的实体类以及实体间关联关系的实现方式。问答时助教还会询问其他ORM问题，需根据上课内容回答。
-    - **C. 数据库设计**
-        - i. 库结构和表结构合理，注意上课提到的避坑问题。
-        - ii. 验收时告诉助教数据库表设计考虑的函数依赖，判断表设计是否实现无损分解及遵循的范式。问答时助教还会询问其他数据库设计问题，需根据上课内容回答。
-    - **D. 功能实现**
-        - i. 完成普通客户的所有功能，包括登录网站、浏览书籍、查看书籍详情、加入购物车、下订单、查询自己的订单等，具体功能见“互联网应用开发技术大作业要求-2025”中涉及普通用户的功能。
-        - ii. 完成管理员功能之用户管理、书籍管理、订单管理中至少一项。
-2. **提交要求**
-    - A. 提交React工程的源代码及Spring Boot源代码。前端只提交src目录和package.json等支撑文件，勿压缩提交node_module子目录；后端只提交src目录和pom.xml等支撑文件，勿压缩提交lib子目录。
-    - B. 提交数据库设计的SQL脚本。
-3. **评分标准：共20分**
-    - A. 功能（4分）
-        - i. 完成普通用户功能，2分。
-        - ii. 完成管理员功能之用户管理、书籍管理、订单管理中其中一项，2分。
-    - B. 设计方案（12分）
-        - i. 用户登录功能实现合理，能确保用户密码安全性，4分，其中回答问题占2分。
-        - ii. 后端工程体现合理分层架构，包括控制层、服务层、数据访问对象层、实体层等，体现接口与实现分离原则，并正确使用依赖注入，4分，其中回答问题占3分。
-        - iii. 熟练运用ORM框架进行数据库访问，访问方式正确，4分，其中回答问题占3分。
-    - C. 数据库设计（4分）
-        - i. 库结构和表结构设计合理，如Order和OrderItem外键关联、User和UserAuth外键关联正确，2分。
-        - ii. 关于函数依赖和范式的问题回答正确，2分。
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-#####################################################################################################################
-### 课程大作业迭代4要求细则
-#### 2025-05-15
-#### 互联网应用开发技术-迭代4 细则
-1. **迭代要求-完成项目开发**
-    - A. 按照《互联网应用开发技术大作业要求-2024》中描述的功能要求，完成电子书店项目的开发。其中关于使用Spring Security进行安全登录的功能，因课时数不够，上课未讲到相关内容，故不做要求。
-    - B. 后端项目架构沿用迭代三要求的分层架构，前后端通信沿用之前的方式，数据库设计可根据实际情况进行优化和调整。
-2. **提交要求**
-    - A. 提交React工程的源代码及Spring Boot源代码。前端只提交src目录和package.json文件，勿压缩提交node_module子目录；后端只提交src目录，勿压缩提交lib子目录。
-    - B. 提交数据库设计的SQL脚本。
-3. **评分标准：共20分**
-    - A. 功能（10分）：参照《互联网应用开发技术大作业要求-2024》实现各功能点，功能正确完备。缺少功能点时，每少一个扣1分，直至扣完本项10分为止。
-    - B. 技术方案（6分）
-        - i. 前端系统架构与框架运用，2分。
-        - ii. 后端系统架构与框架运用，2分。
-        - iii. 数据库设计，2分，关系型数据库设计合理。
-    - C. 界面友好（4分）
-        - i. 符合一般电子商务网站的操作习惯，2分。
-        - ii. 界面美观，2分。
-     
-#########################################################################################################################
-### 互联网应用开发技术-课程大作业要求-2025
-#### 2025-02-08
-#### 互联网应用开发技术-课程大作业要求
-1. **功能要求**
-    - **A. 用户管理**：管理员身份登录后可看到该功能，用户分为顾客和管理员两种角色。
-        - i. 管理员可禁用/解禁用户，被禁用用户无法登录系统。
-    - **B. 用户登录与注册**
-        - i. 用户登录需输入用户名和密码，未输入时点击登录按钮会提示必须输入。
-        - ii. 被禁用用户无法登录，且会提示“您的账号已经被禁用”。
-        - iii. 根据用户名确认其为管理员还是顾客，不同角色界面有差异。
-        - iv. 新用户注册需填写用户名、密码、重复密码、邮箱。
-        - v. 需校验用户名是否重复、两次输入的密码是否相同、邮箱是否符合格式要求。
-    - **C. 书籍管理**：管理员身份登录后可看到该功能。
-        - i. 管理员可浏览数据库中已有的书籍，以列表形式显示，包括书名、作者、封面、ISBN编号和库存量等。
-        - ii. 在列表上方提供搜索功能，管理员可用书名过滤查找书籍。
-        - iii. 管理员可在列表中修改每本图书的书名、作者、封面、ISBN编号和库存量等各种属性。
-        - iv. 管理员可删除旧图书，也可添加新图书。
-    - **D. 浏览书籍**：此部分功能可复用“书籍管理”中的功能。
-        - i. 顾客和管理员都可浏览数据库中已有的书籍，以列表形式显示，包括书名、作者、封面、ISBN编号和库存量。
-        - ii. 提供搜索功能，用户可用书名过滤查找书籍。
-        - iii. 选中某本书后，通过异步方式获取并显示书的详细信息，包括书的封面、作者、简介、定价、库存、出版社等。
-    - **E. 购买书籍**
-        - i. 用户浏览书籍时，可选择将某本书放入购物车。
-        - ii. 用户可浏览购物车，查看放入购物车还未下单的所有书籍。
-        - iii. 在购物车中点击购买书籍后，清空购物车，同时书籍库存相应减少。
-        - iv. 购买书籍后，生成订单展示给用户，并将订单存入数据库。
-    - **F. 订单管理**
-        - i. 顾客可查看自己的所有订单，且可用搜索功能过滤，搜索条件包括时间范围、书籍名称，或同时使用时间范围和书籍名称进行过滤。
-        - ii. 管理员可查看系统中所有的订单，且可用搜索功能过滤，搜索条件包括时间范围、书籍名称，或同时使用时间范围和书籍名称进行过滤。
-    - **G. 统计**
-        - i. 管理员可统计指定时间范围内各种书的销量情况，按销售量排序形成热销榜，以图或表的方式呈现。
-        - ii. 管理员可统计指定时间范围内每个用户的累计消费情况，按购书总金额排序形成消费榜，以图或表的方式呈现。
-        - iii. 顾客可统计指定时间范围内自己购买书籍的情况，包括每种书购买的本数、购书总本数和总金额。
-2. **技术实现要求**
-    - **A. Web前端**
-        - i. 使用React、React Router、Ant Design等架构开发。
-        - ii. 使用WebPack或类似工具打包管理。
-    - **B. Java后端**
-        - i. 使用Spring框架开发（Spring Boot/JPA/Security）。
-        - ii. 使用Maven、Gradle或类似工具打包管理。
-    - **C. 数据库**
-        - i. 使用MySQL关系型数据库。
-        - ii. 使用MySQL Workbench或Navicat等数据库客户端。
-    - **D. 开发工具**
-        - i. IntelliJ IDEA / VS Code。
-3. **迭代要求与评分标准**
-    - **A. 第1次迭代**：20分，运用HTML、CSS、React、React Router、Ant Design开发前端响应式网站。
-        - i. 编写完整的网站静态HTML页面：5分
-            - 应编写整个网站的页面，若使用React框架生成页面元素，也应构建好页面框架，页面至少包含登录页面、网站首页/书籍列表浏览页、书籍详情页、加入购物车页、下订单页，每个页面1分。
-        - ii. 运用CSS调整页面样式：2分
-            - 应使用外部自定义的CSS定义自己风格的登录页面等。
-            - 可使用现成框架的CSS，无需完全重新编写，但要注意引用不同CSS时的冲突问题。
-        - iii. 运用React/React Router框架开发前端响应式程序：5分
-            - 使用React至少完成登录页面、网站首页/书籍列表浏览和书籍详情浏览等页面的响应式程序开发，每个页面1分。
-            - 使用React Router完成上述页面之间的正确跳转，2分。
-        - iv. 使用Ant Design库开发前端UI：2分
-            - 使用Ant Design构件开发前端页面，提升用户体验度和代码可维护性。
-        - v. React框架开发规范：4分
-            - 前端工程应体现构件化开发的思想，验收答辩时需回答助教提出的相关问题。
-    - **B. 第2次迭代**：20分，设计关系型数据库存储数据，并运用Java的Spring Data方式访问数据，开发前后端集成的网站。
-        - i. 数据库设计：5分
-            - 库结构和表结构合理，表与表之间的关系设计合理。
-            - 表中主键设计合理，字段类型设计合理。
-        - ii. JDBC数据库访问：5分
-            - 使用Spring Data数据库访问形式访问数据。
-            - 熟练运用SQL语句实现数据操作。
-            - 在系统中增加DTO层，将所有数据组装成DTO，以屏蔽底层数据存储细节。
-        - iii. 功能完备：5分，至少应实现普通用户（非管理员）的下列功能
-            - 登录：用户使用存储在数据库中的用户名和密码登录。
-            - 书籍列表主页：以列表形式展示所有存储在数据库中的书籍，具体格式参照上课示例。
-            - 书籍详情：点击书籍列表中的每一本书籍，进入该书籍的详情页。
-            - 加入购物车：在书籍详情页上添加加入购物车的功能，购物车信息可存放数据库，也可在内存中保存。
-            - 下订单：在浏览购物车页面时，可以下订单，完成交易。
-        - iv. 前后端集成：5分
-            - 前端页面操作直接反映到数据库中，即前后台集成，数据并非在前端页面硬编码。
-            - 使用选择的前端框架的路由功能实现各个页面之间的跳转逻辑的控制。
-    - **C. 第3次迭代**：20分，运用Spring IoC/JPA框架，以及Ajax和JSON开发前后端集成的网站，网站架构合理。
-        - i. Ajax和JSON前后端集成：5分
-            - 运用Ajax和JSON实现前后端HTTP请求和响应的发送，以及响应数据的传递。
-        - ii. 系统架构：5分
-            - 后端工程应体现出合理的分层架构，包括控制层、服务层、数据访问层、实体层等。
-            - 后端工程要体现接口与实现分离的原则。
-        - iii. 功能完备：5分，至少应实现下列管理员功能，具体功能描述见第1节
-            - 用户管理。
-            - 书籍管理。
-            - 订单管理。
-            - 统计。
-        - iv. 框架运用：5分
-            - 熟练运用ORM框架进行数据库访问，访问方式正确（3分）。
-            - 熟练运用IoC框架进行依赖注入，注入方式正确（2分）。
-    - **D. 第4次迭代**：20分，综合验收。
-        - i. 功能实现：10分，参照第1节的描述实现各功能点，功能正确完备。缺少功能点时，每少一个功能点扣1分，直至扣完本项10分为止。
-        - ii. 技术方案：6分，下列各考核点针对整体工程，如只有个别功能点对应代码符合要求，而整体工程未全部遵循下列原则，则不能得分
-            - 后端系统架构与框架运用：2分。
-            - 数据库设计：2分，关系型数据库设计合理。
-            - 前端系统架构与框架运用：2分。
-        - iii. 界面友好：4分
-            - 符合一般电子商务网站的操作习惯：2分。
-            - 界面美观：2分。
-4. **平时作业要求与评分标准**
-    - A. 每周布置一次作业，除答辩验收外，共5次作业，每次4分，共20分。
+### Code Splitting
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+
+### Analyzing the Bundle Size
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+
+### Making a Progressive Web App
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+
+### Advanced Configuration
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+
+### Deployment
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+
+### `npm run build` fails to minify
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

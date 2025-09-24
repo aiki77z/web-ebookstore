@@ -1,0 +1,332 @@
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Table, Button, Space, Typography, Checkbox, Modal, Spin, Alert, Empty, message, Tag } from 'antd';
+import { CartContext } from '../contexts/CartContext';
+import { Link } from 'react-router-dom';
+
+const { Title } = Typography;
+
+export default function CartPage() {
+  const {
+    cart,
+    removeFromCart,
+    updateCartItemQuantity,
+    loading,
+    fetchCart,
+    checkoutCart
+  } = useContext(CartContext);
+
+  const [isModalVisible, setIsModalVisible] = useState(false);//在组件中添加状态的钩子函数
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+
+  // 组件加载时获取购物车数据
+  //依赖项变化时重新执行
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  // 计算总价
+  const total = selectedItems.reduce(
+    (sum, item) => sum + item.book.price * item.quantity, 0
+  );
+
+  // 检查商品是否可选择（非售罄状态且有库存）
+  const isItemSelectable = (item) => {
+    // 检查书籍基本状态
+    if (item.book.status === 'OUT_OF_STOCK' || item.book.stock === 0) {
+      return false;
+    }
+    
+    // 检查购物车中的数量是否超过库存
+    if (item.quantity > item.book.stock) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // 切换选择状态
+  const toggleSelect = (itemId) => {
+    const item = cart.find(cartItem => cartItem.id === itemId);
+    if (!item || !isItemSelectable(item)) return;
+
+    setSelectedItems(prev => {
+      const isSelected = prev.some(selected => selected.id === itemId);
+      if (isSelected) {
+        return prev.filter(selected => selected.id !== itemId);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    const selectableItems = cart.filter(isItemSelectable);
+    if (selectedItems.length === selectableItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(selectableItems);
+    }
+  };
+
+  // 更新数量
+  const handleUpdateQuantity = async (itemId, newQuantity) => {
+    const item = cart.find(cartItem => cartItem.id === itemId);
+    if (!item) return;
+
+    // 检查新数量是否超过库存
+    if (newQuantity > item.book.stock) {
+      message.error(`库存不足，最多只能购买${item.book.stock}本`);
+      return;
+    }
+
+    try {
+      await updateCartItemQuantity(itemId, newQuantity);
+      // 更新选中项目的数量
+      setSelectedItems(prev => 
+        prev.map(selectedItem => 
+          selectedItem.id === itemId ? { ...selectedItem, quantity: newQuantity } : selectedItem
+        )
+      );
+    } catch (err) {
+      message.error('更新数量失败');
+    }
+  };
+
+  // 删除商品
+  const handleRemove = async (itemId) => {
+    try {
+      await removeFromCart(itemId);
+      setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+      message.success('商品已从购物车移除');
+    } catch (err) {
+      message.error('删除失败');
+    }
+  };
+//useMemo 缓存计算结果，依赖变化时才重新计算
+  const columns = useMemo(() => [
+    {
+      title: (
+        <Checkbox
+          checked={selectedItems.length === cart.filter(isItemSelectable).length && cart.some(isItemSelectable)}
+          indeterminate={selectedItems.length > 0 && selectedItems.length < cart.filter(isItemSelectable).length}
+          onChange={toggleSelectAll}
+        >
+          全选
+        </Checkbox>
+      ),
+      dataIndex: 'selected',
+      key: 'selected',
+      render: (_, record) => (
+        <Checkbox
+          checked={selectedItems.some(item => item.id === record.id)}
+          onChange={() => toggleSelect(record.id)}
+          disabled={!isItemSelectable(record)}
+        />
+      ),
+    },
+    {
+      title: '书籍封面',
+      dataIndex: ['book', 'cover'],
+      key: 'cover',
+      render: (cover, record) => (
+        <div style={{ position: 'relative' }}>
+          <img
+            src={cover}
+            alt="书籍封面"
+            style={{ 
+              width: '60px', 
+              height: '80px', 
+              objectFit: 'cover',
+              opacity: !isItemSelectable(record) ? 0.5 : 1
+            }}
+          />
+          {!isItemSelectable(record) && (
+            <Tag color="error" style={{
+              position: 'absolute',
+              top: '0',
+              right: '0',
+              fontSize: '12px'
+            }}>
+              {record.book.stock === 0 ? '售罄' : '库存不足'}
+            </Tag>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: '书名',
+      dataIndex: ['book', 'title'],
+      key: 'title',
+      render: (title, record) => (
+        <Link 
+          to={`/book/${record.book.id}`}
+          style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}
+        >
+          {title}
+        </Link>
+      ),
+    },
+    {
+      title: '作者',
+      dataIndex: ['book', 'author'],
+      key: 'author',
+      render: (author, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          {author}
+        </span>
+      ),
+    },
+    {
+      title: '单价',
+      dataIndex: ['book', 'price'],
+      key: 'price',
+      render: (price, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          ￥{price}
+        </span>
+      ),
+    },
+    {
+      title: '数量',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (quantity, record) => (
+        <Space direction="vertical" size="small">
+          <Space>
+            <Button 
+              size="small" 
+              onClick={() => handleUpdateQuantity(record.id, quantity - 1)}
+              disabled={quantity <= 1}
+            >
+              -
+            </Button>
+            <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+              {quantity}
+            </span>
+            <Button 
+              size="small" 
+              onClick={() => handleUpdateQuantity(record.id, quantity + 1)}
+              disabled={quantity >= record.book.stock}
+            >
+              +
+            </Button>
+          </Space>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            库存: {record.book.stock !== undefined ? `${record.book.stock}本` : '未知'}
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: '小计',
+      key: 'subtotal',
+      render: (_, record) => (
+        <span style={{ color: !isItemSelectable(record) ? '#999' : 'inherit' }}>
+          ￥{(record.book.price * record.quantity).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="link"
+            danger
+            onClick={() => handleRemove(record.id)}
+          >
+            删除
+          </Button>
+        </Space>
+      ),
+    }
+  ], [selectedItems, cart]);
+
+  const handleCheckout = async () => {
+    if (selectedItems.length === 0) {
+      message.warning('请至少选择一个商品');
+      return;
+    }
+
+    try {
+      setCheckoutLoading(true);
+      await checkoutCart(selectedItems);
+      setIsModalVisible(true);
+      setSelectedItems([]);
+      message.success('结算成功！');
+    } catch (err) {
+      message.error('结算失败: ' + (err.message || '未知错误'));
+      console.error('结算失败:', err);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleOk = () => {
+    setIsModalVisible(false);
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', margin: '50px 0' }}>
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    if (!cart || cart.length === 0) {
+      return (
+        <Empty
+          description="购物车为空"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      );
+    }
+
+    return (
+      <>
+        <Table
+          columns={columns}
+          dataSource={cart}
+          rowKey="id"
+          pagination={false}
+        />
+        <div style={{ textAlign: 'right', marginTop: '24px' }}>
+          <Space>
+            <span>已选择 {selectedItems.length} 件商品</span>
+            <Title level={4} style={{ margin: 0 }}>总计：￥{total.toFixed(2)}</Title>
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleCheckout}
+              disabled={selectedItems.length === 0}
+              loading={checkoutLoading}
+            >
+              结算({selectedItems.length})
+            </Button>
+          </Space>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <Title level={2}>购物车</Title>
+      {renderContent()}
+
+      <Modal
+        title="购买成功"
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={() => setIsModalVisible(false)}
+      >
+        <p>购买成功！商品已添加到订单列表。</p>
+      </Modal>
+    </div>
+  );
+}
