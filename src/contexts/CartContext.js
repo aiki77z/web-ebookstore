@@ -1,6 +1,8 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
 import { message } from 'antd';
 import { cartApi, orderApi } from '../services/api';
+import websocketService from '../services/websocketService';
+import { useAuth } from './AuthContext';
 
 export const CartContext = createContext();
 
@@ -8,6 +10,8 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
 
   // 获取购物车数据
   const fetchCart = useCallback(async () => {
@@ -175,6 +179,38 @@ export function CartProvider({ children }) {
     fetchCart();
     fetchOrders();
   }, [fetchCart, fetchOrders]);
+
+  // WebSocket 连接管理
+  useEffect(() => {
+    if (user && user.id) {
+      console.log('[CartContext] 用户已登录，建立 WebSocket 连接, userId:', user.id);
+
+      // 连接 WebSocket 并设置订单结果回调
+      websocketService.connect(user.id, (result) => {
+        console.log('[CartContext] 收到订单处理结果:', result);
+
+        if (result.success) {
+          message.success(result.message || '订单创建成功！');
+
+          // 刷新订单列表
+          fetchOrders();
+
+          // 如果是从购物车结算，刷新购物车
+          if (!result.directBuy) {
+            fetchCart();
+          }
+        } else {
+          message.error(result.message || '订单创建失败');
+        }
+      });
+
+      // 组件卸载或用户登出时断开连接
+      return () => {
+        console.log('[CartContext] 断开 WebSocket 连接');
+        websocketService.disconnect();
+      };
+    }
+  }, [user, fetchOrders, fetchCart]);
 
   const value = {
     cart,

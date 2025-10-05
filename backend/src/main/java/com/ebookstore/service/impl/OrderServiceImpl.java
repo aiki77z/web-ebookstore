@@ -10,9 +10,11 @@ import com.ebookstore.entity.User;
 import com.ebookstore.entity.Book;
 import com.ebookstore.repository.CartItemRepository;
 import com.ebookstore.repository.OrderRepository;
+import com.ebookstore.repository.OrderItemRepository;
 import com.ebookstore.repository.BookRepository;
 import com.ebookstore.repository.UserRepository;
 import com.ebookstore.service.OrderService;
+import com.ebookstore.service.OrderItemWriteService;
 import com.ebookstore.service.UserService;
 import com.ebookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private OrderItemWriteService orderItemWriteService;
+
+    @Autowired
+    private javax.persistence.EntityManager entityManager;
+
 
     @Override
     public List<OrderItemDTO> getOrders() {
@@ -136,31 +148,68 @@ public class OrderServiceImpl implements OrderService {
 
         // 设置订单总金额
         order.setTotalAmount(totalAmount);
+        order = orderRepository.save(order);
+        System.out.println("【事务测试】Order已保存到数据库，ID: " + order.getId());
 
-        try {
-            // 保存订单及订单项
-            order = orderRepository.save(order);
+        // 方式1: REQUIRED（默认） - 加入当前事务，如果当前没有事务则创建新事务
+         orderItemWriteService.saveRequired(order.getItems());
+         System.out.println("【事务测试】OrderItem已保存到数据库，数量: " + order.getItems().size());
 
-            // 减少库存
-            for (CartItem cartItem : selectedItems) {
-                if (!bookService.reduceStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
-                    throw new RuntimeException("减少《" + cartItem.getBook().getTitle() + "》库存失败");
-                }
+        // 方式2: REQUIRES_NEW - 总是创建新事务，挂起当前事务（如果有）
+//         orderItemWriteService.saveRequiresNew(order.getItems());
+//
+//         System.out.println("【事务测试】OrderItem已保存（REQUIRES_NEW），数量: " + order.getItems().size());
+
+        // 方式3: NESTED - 如果当前有事务，则在嵌套事务中执行
+        // orderItemWriteService.saveNested(order.getItems());
+        // entityManager.flush();
+        // System.out.println("【事务测试】OrderItem已保存（NESTED），数量: " + order.getItems().size());
+
+        // 方式4: MANDATORY - 必须在事务中执行，否则抛出异常
+        // orderItemWriteService.saveMandatory(order.getItems());
+        // entityManager.flush();
+        // System.out.println("【事务测试】OrderItem已保存（MANDATORY），数量: " + order.getItems().size());
+
+        // 方式5: SUPPORTS - 如果当前有事务则加入，没有则以非事务方式执行
+        // orderItemWriteService.saveSupports(order.getItems());
+        // entityManager.flush();
+        // System.out.println("【事务测试】OrderItem已保存（SUPPORTS），数量: " + order.getItems().size());
+
+        // 方式6: NOT_SUPPORTED - 以非事务方式执行，如果当前有事务则挂起
+        // orderItemWriteService.saveNotSupported(order.getItems());
+        // entityManager.flush();
+        // System.out.println("【事务测试】OrderItem已保存（NOT_SUPPORTED），数量: " + order.getItems().size());
+
+        // 方式7: NEVER - 以非事务方式执行，如果当前有事务则抛出异常
+        // orderItemWriteService.saveNever(order.getItems());
+        // entityManager.flush();
+        // System.out.println("【事务测试】OrderItem已保存（NEVER），数量: " + order.getItems().size());
+
+
+
+        // ========== 测试回滚：在此处制造除0异常 ==========
+        // 取消注释下面这行可以测试不同传播属性下的回滚行为
+        // System.out.println("【事务测试】即将抛出除0异常，测试回滚...");
+        // int testRollback = 1 / 0;
+
+        // ========== 第三步：减少库存 ==========
+        for (CartItem cartItem : selectedItems) {
+            if (!bookService.reduceStock(cartItem.getBook().getId(), cartItem.getQuantity())) {
+                throw new RuntimeException("减少《" + cartItem.getBook().getTitle() + "》库存失败");
             }
-
-            // 删除购物车中的相关项目
-            cartItemRepository.deleteAll(selectedItems);
-
-            // 转换返回数据
-            return order.getItems().stream()
-                    .map(this::convertToDTO)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            // 记录错误并重新抛出
-            e.printStackTrace();
-            throw new RuntimeException("创建订单或删除购物车项失败", e);
         }
+        entityManager.flush();
+
+        // ========== 第四步：删除购物车中的相关项目 ==========
+        cartItemRepository.deleteAll(selectedItems);
+        entityManager.flush();
+
+        // 转换返回数据
+        return order.getItems().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
+
 
     private OrderItemDTO convertToDTO(OrderItem orderItem) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -257,31 +306,52 @@ public class OrderServiceImpl implements OrderService {
 
         order.setTotalAmount(totalAmount);
 
-        try {
-            // 保存订单
-            order = orderRepository.save(order);
+        order = orderRepository.save(order);
+        entityManager.flush();
+        System.out.println("【事务测试】Order已保存到数据库，ID: " + order.getId());
 
-            // 减少库存
-            for (Map<String, Object> item : items) {
-                Long bookId = Long.valueOf(item.get("bookId").toString());
-                Integer quantity = Integer.valueOf(item.get("quantity").toString());
+        // 方式1: REQUIRED（默认） - 加入当前事务，如果当前没有事务则创建新事务
+         orderItemWriteService.saveRequired(order.getItems());
+        entityManager.flush();
+         System.out.println("【事务测试】OrderItem已保存到数据库，数量: " + order.getItems().size());
+//         方式2: REQUIRES_NEW - 总是创建新事务，挂起当前事务（如果有）
+//        orderItemWriteService.saveRequiresNew(order.getItems());
+//        System.out.println("【事务测试】OrderItem已保存（REQUIRES_NEW），数量: " + order.getItems().size());
+        // 方式3: NESTED - 如果当前有事务，则在嵌套事务中执行
+//         orderItemWriteService.saveNested(order.getItems());
+//         System.out.println("【事务测试】OrderItem已保存（NESTED），数量: " + order.getItems().size());
+        // 方式4: MANDATORY - 必须在事务中执行，否则抛出异常
+//         orderItemWriteService.saveMandatory(order.getItems());
+//         System.out.println("【事务测试】OrderItem已保存（MANDATORY），数量: " + order.getItems().size());
+        // 方式5: SUPPORTS - 如果当前有事务则加入，没有则以非事务方式执行
+//         orderItemWriteService.saveSupports(order.getItems());
+//         System.out.println("【事务测试】OrderItem已保存（SUPPORTS），数量: " + order.getItems().size());
+        // 方式6: NOT_SUPPORTED - 以非事务方式执行，如果当前有事务则挂起
+//         orderItemWriteService.saveNotSupported(order.getItems());
+//         System.out.println("【事务测试】OrderItem已保存（NOT_SUPPORTED），数量: " + order.getItems().size());
+        // 方式7: NEVER - 以非事务方式执行，如果当前有事务则抛出异常
+//         orderItemWriteService.saveNever(order.getItems());
+//         System.out.println("【事务测试】OrderItem已保存（NEVER），数量: " + order.getItems().size());
+//         System.out.println("【事务测试】即将抛出除0异常，测试回滚...");
+//         int testRollback = 1 / 0;
 
-                if (!bookService.reduceStock(bookId, quantity)) {
-                    Book book = bookRepository.findById(bookId)
-                            .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
-                    throw new RuntimeException("减少《" + book.getTitle() + "》库存失败");
-                }
+        // ========== 第三步：减少库存 ==========
+        for (Map<String, Object> item : items) {
+            Long bookId = Long.valueOf(item.get("bookId").toString());
+            Integer quantity = Integer.valueOf(item.get("quantity").toString());
+
+            if (!bookService.reduceStock(bookId, quantity)) {
+                Book book = bookRepository.findById(bookId)
+                        .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + bookId + " 的书籍"));
+                throw new RuntimeException("减少《" + book.getTitle() + "》库存失败");
             }
-
-            // 转换返回数据
-            return order.getItems().stream()
-                    .map(this::convertToDTO)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            // 记录错误并重新抛出
-            e.printStackTrace();
-            throw new RuntimeException("创建直接订单失败", e);
+            entityManager.flush();
         }
+
+        // 转换返回数据
+        return order.getItems().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -313,4 +383,4 @@ public class OrderServiceImpl implements OrderService {
                 .map(this::convertToOrderDTO)
                 .collect(Collectors.toList());
     }
-} 
+}

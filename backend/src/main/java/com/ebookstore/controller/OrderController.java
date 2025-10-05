@@ -3,10 +3,16 @@ package com.ebookstore.controller;
 import com.ebookstore.dto.CartItemDTO;
 import com.ebookstore.dto.OrderDTO;
 import com.ebookstore.dto.OrderItemDTO;
+import com.ebookstore.entity.OrderItem;
+import com.ebookstore.entity.Book;
+import com.ebookstore.entity.Order;
 import com.ebookstore.dto.UserInfoDTO;
 import com.ebookstore.service.CartService;
 import com.ebookstore.service.OrderService;
+import com.ebookstore.service.OrderItemWriteService;
 import com.ebookstore.service.AuthService;
+import com.ebookstore.repository.BookRepository;
+import com.ebookstore.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ebookstore.dto.AsyncOrderRequestMessage;
 
 import javax.servlet.http.HttpSession;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -43,6 +50,15 @@ public class OrderController {
     }
     @Autowired
     private CartService cartService;//依赖注入：自动注入CartService实例 业务逻辑交给
+
+    @Autowired
+    private OrderItemWriteService orderItemWriteService;
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Autowired
     private OrderService orderService;//依赖注入：自动注入OrderService实例 业务逻辑交给
@@ -231,14 +247,14 @@ public class OrderController {
                     response.put("message", "订单商品列表为空");
                     return ResponseEntity.badRequest().body(response);
                 }
-                orderItems = orderService.createDirectOrder(items);//函数依赖
+                orderItems = orderService.createDirectOrder(items);
             } else {
                 // 处理从购物车结算的情况
                 List<Long> cartItemIds = null;
                 if (payload.containsKey("cartItemIds")) {
                     try {
                         Object cartItemIdsObj = payload.get("cartItemIds");
-                        if (cartItemIdsObj instanceof List) {//判断item类型 转化为Long
+                        if (cartItemIdsObj instanceof List) {
                             cartItemIds = ((List<?>) cartItemIdsObj).stream()
                                     .map(item -> {
                                         if (item instanceof Integer) {
@@ -268,7 +284,7 @@ public class OrderController {
                     return ResponseEntity.badRequest().body(response);
                 }
 
-                orderItems = orderService.createOrder(cartItemIds);//函数依赖
+                orderItems = orderService.createOrder(cartItemIds);
             }
 
             response.put("success", true);
