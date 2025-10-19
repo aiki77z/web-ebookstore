@@ -26,9 +26,10 @@ class WebSocketService {
         // 创建 SockJS 连接
         const socket = new SockJS('http://localhost:8080/ws');
 
-        // 创建 STOMP 客户端
+        // 创建 STOMP 客户端（通过 connectHeaders 传递 user-id，供后端绑定 Principal）
         this.client = new Client({
             webSocketFactory: () => socket,
+            connectHeaders: { 'user-id': String(userId) },
 
             // 连接成功回调
             onConnect: (frame) => {
@@ -36,8 +37,9 @@ class WebSocketService {
                 this.connected = true;
 
                 // 订阅用户专属的订单结果队列
+                // 订阅“当前用户”的专属目的地（无需写 userId，Spring 会根据 Principal 路由到该用户）
                 const subscription = this.client.subscribe(
-                    `/user/${userId}/queue/order-result`,
+                    `/user/queue/order-result`,
                     (message) => {
                         try {
                             const result = JSON.parse(message.body);
