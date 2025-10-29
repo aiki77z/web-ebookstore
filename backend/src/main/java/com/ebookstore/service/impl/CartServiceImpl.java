@@ -5,6 +5,7 @@ import com.ebookstore.entity.CartItem;
 import com.ebookstore.entity.User;
 import com.ebookstore.entity.Book;
 import com.ebookstore.repository.BookRepository;
+import com.ebookstore.repository.BookInventoryRepository;
 import com.ebookstore.repository.CartItemRepository;
 import com.ebookstore.service.CartService;
 import com.ebookstore.service.UserService;
@@ -29,6 +30,9 @@ public class CartServiceImpl implements CartService {//多个repository协同操
     @Autowired
     private BookRepository bookRepository;
     
+    @Autowired
+    private BookInventoryRepository bookInventoryRepository;
+
     @Autowired
     private UserService userService;
     
@@ -158,9 +162,11 @@ public class CartServiceImpl implements CartService {//多个repository协同操
     }
     
     private CartItemDTO convertToDTO(CartItem cartItem) {
-        // 重新从数据库获取最新的书籍信息，确保库存数据是最新的
+        // 重新从数据库获取最新的书籍信息和库存
         Book book = bookRepository.findById(cartItem.getBook().getId())
                 .orElse(cartItem.getBook());
+        Integer stock = bookInventoryRepository.getStock(book.getId());
+        if (stock == null) stock = 0;
                 
         return new CartItemDTO(
                 cartItem.getId(),
@@ -170,7 +176,7 @@ public class CartServiceImpl implements CartService {//多个repository协同操
                 book.getPrice(),
                 book.getCover(),
                 book.getStatus(),
-                book.getStock(),
+                stock,
                 book.getIsbn(),
                 cartItem.getQuantity(),
                 cartItem.getSelected()

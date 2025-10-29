@@ -1,10 +1,13 @@
 package com.ebookstore.service.impl;
 
 import com.ebookstore.dto.BookDTO;
+import com.ebookstore.dto.BookMetaDTO;
 import com.ebookstore.entity.Book;
 import com.ebookstore.repository.BookRepository;
+import com.ebookstore.repository.BookInventoryRepository;
 import com.ebookstore.service.BookService;
 import com.ebookstore.service.CartService;
+import com.ebookstore.service.BookCacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,36 +31,102 @@ public class BookServiceImpl implements BookService {
     @Autowired
     private CartService cartService;
     
+    @Autowired
+    private BookCacheService bookCacheService;
+    
+    @Autowired
+    private BookInventoryRepository bookInventoryRepository;
+    
     // 普通用户功能 - 只显示未删除的书籍
     
     @Override
     public List<BookDTO> getAllBooks() {
+        System.out.println("[Service] getAllBooks called");
+        // Try cache list of book meta (without stock), then fill stock from DB per item
+        List<BookMetaDTO> cachedList = bookCacheService.getAllBookMetaList();
+        if (cachedList != null) {
+            long t0 = System.currentTimeMillis();
+            List<BookDTO> rs = cachedList.stream()
+                    .map(this::mergeMetaWithLiveStock)
+                    .collect(Collectors.toList());
+            long t1 = System.currentTimeMillis() - t0;
+            System.out.println("[Service] getAllBooks from CACHE meta + DB stock, cost=" + t1 + "ms");
+            return rs;
+        }
+        long t0 = System.currentTimeMillis();
         List<Book> books = bookRepository.findAllAvailable();
-        return books.stream()
+        List<BookDTO> result = books.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        // store meta list to cache
+        List<BookMetaDTO> metas = books.stream().map(this::toMeta).collect(Collectors.toList());
+        bookCacheService.putAllBookMetaList(metas);
+        long t1 = System.currentTimeMillis() - t0;
+        System.out.println("[Service] getAllBooks from DB, cost=" + t1 + "ms");
+        return result;
     }
     
     @Override
     public BookDTO getBookById(Long id) {
+        System.out.println("[Service] getBookById id=" + id);
+        // hit cache for meta
+        BookMetaDTO meta = bookCacheService.getBookMeta(id);
+        if (meta != null) {
+            long t0 = System.currentTimeMillis();
+            BookDTO dto = mergeMetaWithLiveStock(meta);
+            long t1 = System.currentTimeMillis() - t0;
+            System.out.println("[Service] getBookById from CACHE meta + DB stock, cost=" + t1 + "ms");
+            return dto;
+        }
+        long t0 = System.currentTimeMillis();
         Book book = bookRepository.findByIdAndNotDeleted(id)
                 .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的书籍"));
-        return convertToDTO(book);
+        // backfill cache
+        bookCacheService.putBookMeta(toMeta(book));
+        BookDTO dto = convertToDTO(book);
+        long t1 = System.currentTimeMillis() - t0;
+        System.out.println("[Service] getBookById from DB, cost=" + t1 + "ms");
+        return dto;
     }
     
     @Override
     public List<BookDTO> searchBooks(String query) {
+        System.out.println("[Service] searchBooks query=" + query);
+        // For search, we can fetch from DB and cache individual metas
+        long t0 = System.currentTimeMillis();
         List<Book> books = bookRepository.searchAvailableBooks(query);
-        return books.stream()
-                .map(this::convertToDTO)
+        List<BookDTO> list = books.stream()
+                .map(book -> {
+                    bookCacheService.putBookMeta(toMeta(book));
+                    return convertToDTO(book);
+                })
                 .collect(Collectors.toList());
+        long t1 = System.currentTimeMillis() - t0;
+        System.out.println("[Service] searchBooks from DB, cost=" + t1 + "ms");
+        return list;
     }
     
     // 管理员功能
     
     @Override
     public Book saveBook(Book book) {
-        return bookRepository.save(book);
+        System.out.println("[Service] saveBook id=" + book.getId());
+        Book saved = bookRepository.save(book);
+        // ensure inventory row exists
+        try {
+            Integer existing = bookInventoryRepository.getStock(saved.getId());
+            if (existing == null) {
+                com.ebookstore.entity.BookInventory inv = new com.ebookstore.entity.BookInventory(
+                        saved.getId(), 0, java.time.LocalDateTime.now());
+                bookInventoryRepository.save(inv);
+                System.out.println("[Service] inventory created for book id=" + saved.getId());
+            }
+        } catch (Exception e) {
+            System.out.println("[Service] ensure inventory error: " + e.getMessage());
+        }
+        // evict caches
+        bookCacheService.evictBook(saved.getId());
+        return saved;
     }
     
     @Override
@@ -70,6 +139,8 @@ public class BookServiceImpl implements BookService {
             // 软删除书籍
             book.setDeleted(true);
             bookRepository.save(book);
+            // evict caches
+            bookCacheService.evictBook(id);
             
             // 清理所有用户购物车中的该书籍
             int cleanedCount = cartService.cleanCartByBookId(id);
@@ -90,6 +161,7 @@ public class BookServiceImpl implements BookService {
                     .orElseThrow(() -> new EntityNotFoundException("未找到ID为 " + id + " 的书籍"));
             book.setDeleted(false);
             bookRepository.save(book);
+            bookCacheService.evictBook(id);
             return true;
         } catch (Exception e) {
             return false;
@@ -125,16 +197,18 @@ public class BookServiceImpl implements BookService {
     public boolean updateStock(Long bookId, Integer quantity) {
         try {
             Book book = getAvailableBookById(bookId);
-            book.setStock(quantity);
-            
-            // 根据库存量更新状态
-            if (quantity > 0) {
-                book.setStatus("AVAILABLE");
-            } else {
-                book.setStatus("OUT_OF_STOCK");
+            // 更新库存表
+            int updated = bookInventoryRepository.updateStock(bookId, quantity);
+            if (updated == 0) {
+                // 若不存在，则插入
+                com.ebookstore.entity.BookInventory inv = new com.ebookstore.entity.BookInventory(bookId, quantity, java.time.LocalDateTime.now());
+                bookInventoryRepository.save(inv);
             }
-            
+            // 根据库存量更新书籍状态
+            book.setStatus(quantity > 0 ? "AVAILABLE" : "OUT_OF_STOCK");
             bookRepository.save(book);
+            // evict caches so next read refreshes meta (status may change)
+            bookCacheService.evictBook(bookId);
             return true;
         } catch (Exception e) {
             return false;
@@ -146,19 +220,20 @@ public class BookServiceImpl implements BookService {
     public boolean reduceStock(Long bookId, Integer quantity) {
         try {
             Book book = getAvailableBookById(bookId);
-            
-            if (book.getStock() < quantity) {
+            Integer current = bookInventoryRepository.getStock(bookId);
+            if (current == null) current = 0;
+            if (current < quantity) {
                 return false; // 库存不足
             }
-            
-            book.setStock(book.getStock() - quantity);
-            
+            int newStock = current - quantity;
+            bookInventoryRepository.updateStock(bookId, newStock);
             // 根据库存量更新状态
-            if (book.getStock() == 0) {
+            if (newStock == 0) {
                 book.setStatus("OUT_OF_STOCK");
+                bookRepository.save(book);
             }
-            
-            bookRepository.save(book);
+            // evict meta because status might change
+            bookCacheService.evictBook(bookId);
             return true;
         } catch (Exception e) {
             return false;
@@ -168,8 +243,10 @@ public class BookServiceImpl implements BookService {
     @Override
     public boolean checkStock(Long bookId, Integer quantity) {
         try {
-            Book book = getAvailableBookById(bookId);
-            return book.getStock() >= quantity;
+            getAvailableBookById(bookId);
+            Integer current = bookInventoryRepository.getStock(bookId);
+            if (current == null) current = 0;
+            return current >= quantity;
         } catch (Exception e) {
             return false;
         }
@@ -193,9 +270,41 @@ public class BookServiceImpl implements BookService {
         dto.setDescription(book.getDescription());
         dto.setCover(book.getCover());
         dto.setStatus(book.getStatus());
-        dto.setStock(book.getStock());
+        Integer stock = bookInventoryRepository.getStock(book.getId());
+        dto.setStock(stock == null ? 0 : stock);
         dto.setIsbn(book.getIsbn());
         dto.setDeleted(book.getDeleted());
+        return dto;
+    }
+
+    private BookMetaDTO toMeta(Book book) {
+        BookMetaDTO m = new BookMetaDTO();
+        m.setId(book.getId());
+        m.setTitle(book.getTitle());
+        m.setAuthor(book.getAuthor());
+        m.setPrice(book.getPrice());
+        m.setDescription(book.getDescription());
+        m.setCover(book.getCover());
+        m.setStatus(book.getStatus());
+        m.setIsbn(book.getIsbn());
+        m.setDeleted(book.getDeleted());
+        return m;
+    }
+
+    private BookDTO mergeMetaWithLiveStock(BookMetaDTO meta) {
+        BookDTO dto = new BookDTO();
+        dto.setId(meta.getId());
+        dto.setTitle(meta.getTitle());
+        dto.setAuthor(meta.getAuthor());
+        dto.setPrice(meta.getPrice());
+        dto.setDescription(meta.getDescription());
+        dto.setCover(meta.getCover());
+        dto.setStatus(meta.getStatus());
+        dto.setIsbn(meta.getIsbn());
+        dto.setDeleted(meta.getDeleted());
+        // fetch live stock
+        Integer stock = bookInventoryRepository.getStock(meta.getId());
+        dto.setStock(stock == null ? 0 : stock);
         return dto;
     }
 } 

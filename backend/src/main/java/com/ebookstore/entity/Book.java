@@ -37,9 +37,6 @@ public class Book {
     @Column(length = 20)
     private String status;//AVAILABLE/OUT_OF_STOCK
     
-    @Column(nullable = false)
-    private Integer stock = 100; // 库存量，默认100本
-    
     @Column(length = 50)
     private String isbn; // ISBN编号
     

@@ -40,5 +40,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     
     @Query("SELECT b FROM Book b WHERE b.id IN :ids")
     List<Book> findByIdIn(@Param("ids") List<Long> ids);
+
+    // 注意：库存已迁移至 book_inventory 表，相关查询请使用 BookInventoryRepository
 }
 //使用@Query注解来定义自定义查询
