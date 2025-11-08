@@ -141,6 +141,16 @@ export const orderApi = {
   }),
 };
 
+// 外部服务相关API（通过后端转发）
+export const externalApi = {
+  // 通过作者微服务：按书名查作者
+  authorLookup: (title) => request(`/external/author?title=${encodeURIComponent(title)}`),
+  // 价格函数式服务试算（单项）
+  priceCompute: (unitPrice, quantity) => request('/external/price', {
+    method: 'POST',
+    body: JSON.stringify({ unitPrice, quantity }),
+  }),
+};
 // 管理员用户管理API
 export const getAllUsers = () => request('/admin/users');
 //改变用户状态api调用封装

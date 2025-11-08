@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
+import com.ebookstore.service.PriceCalculatorClient;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -44,6 +45,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private BookService bookService;
+
+    @Autowired
+    private PriceCalculatorClient priceCalculatorClient;
 
     @Override
     public List<OrderItemDTO> getOrders() {
@@ -115,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setBook(cartItem.getBook());
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(cartItem.getBook().getPrice());
-            orderItem.setSubtotal(cartItem.getBook().getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
+            orderItem.setSubtotal(priceCalculatorClient.calculate(cartItem.getBook().getPrice(), cartItem.getQuantity()));
             
             // 使用辅助方法建立关系
             order.addOrderItem(orderItem);
@@ -228,7 +232,7 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setBook(book);
             orderItem.setQuantity(quantity);
             orderItem.setPrice(book.getPrice());
-            orderItem.setSubtotal(book.getPrice().multiply(BigDecimal.valueOf(quantity)));
+            orderItem.setSubtotal(priceCalculatorClient.calculate(book.getPrice(), quantity));
 
             // 使用辅助方法建立关系
             order.addOrderItem(orderItem);

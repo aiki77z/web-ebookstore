@@ -2,6 +2,7 @@ package com.ebookstore.controller;
 
 import com.ebookstore.dto.BookDTO;
 import com.ebookstore.service.BookService;
+import com.ebookstore.service.ExternalAuthorServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,8 @@ public class BookController {
 
     @Autowired
     private BookService bookService;
+    @Autowired
+    private ExternalAuthorServiceClient externalAuthorServiceClient;
 
     /**
      * 获取所有书籍
@@ -78,6 +81,32 @@ public class BookController {
             e.printStackTrace();
             response.put("success", false);
             response.put("message", "搜索书籍失败：" + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    /**
+     * 使用微服务按书名查询作者
+     */
+    @GetMapping("/author")
+    public ResponseEntity<Map<String, Object>> findAuthorByTitle(@RequestParam("title") String title) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String author = externalAuthorServiceClient.findAuthorByTitle(title);
+            if (author != null) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("title", title);
+                data.put("author", author);
+                response.put("success", true);
+                response.put("data", data);
+            } else {
+                response.put("success", false);
+                response.put("message", "未找到匹配书名");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "作者查询失败：" + e.getMessage());
             return ResponseEntity.ok(response);
         }
     }

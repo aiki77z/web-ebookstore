@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Input, Spin, Alert } from 'antd';
+import { Row, Col, Input, Spin, Alert, Button, message, Modal } from 'antd';
 import BookCard from '../components/BookCard';
-import { bookApi } from '../services/api';
+import { bookApi, externalApi } from '../services/api';
 
 const { Search } = Input;
 
@@ -74,19 +74,60 @@ export default function Home() {
     }
   };
 
+  // // 微服务作者查询（支持从输入参数触发）
+  // const handleAuthorLookup = async (valueFromInput) => {
+  //   const title = (typeof valueFromInput === 'string' ? valueFromInput : searchText || '').trim();
+  //   if (!title) {
+  //     message.warning('请输入书名后再点击“查询作者(微服务)”');
+  //     return;
+  //   }
+  //   try {
+  //     const resp = await externalApi.authorLookup(title);
+  //     if (resp && resp.success && resp.data && resp.data.author) {
+  //       Modal.info({
+  //         title: '作者查询',
+  //         content: `本书作者为 ${resp.data.author}`,
+  //         okText: '知道了'
+  //       });
+  //     } else {
+  //       Modal.error({
+  //         title: '作者查询',
+  //         content: '查询失败',
+  //         okText: '关闭'
+  //       });
+  //     }
+  //   } catch (e) {
+  //     Modal.error({
+  //       title: '作者查询',
+  //       content: '查询失败',
+  //       okText: '关闭'
+  //     });
+  //   }
+  // };
+
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ marginBottom: '24px' }}>
-        <Search
-          placeholder="输入书名或作者搜索"
-          allowClear
-          enterButton="搜索"
-          size="large"
-          onChange={(e) => setSearchText(e.target.value)}
-          onSearch={handleSearch}
-          style={{ maxWidth: '500px' }}
-          loading={loading}
-        />
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Search
+            placeholder="输入书名或作者搜索"
+            allowClear
+            enterButton="搜索"
+            size="large"
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+            style={{ maxWidth: '500px' }}
+            loading={loading}
+          />
+          {/*<Search*/}
+          {/*  placeholder="输入书名，查询作者(微服务)"*/}
+          {/*  allowClear*/}
+          {/*  enterButton="查询作者(微服务)"*/}
+          {/*  size="large"*/}
+          {/*  onSearch={(val) => handleAuthorLookup(val)}*/}
+          {/*  style={{ maxWidth: '420px' }}*/}
+          {/*/>*/}
+        </div>
       </div>
 
       <h2 style={{ marginBottom: '24px' }}>热门书籍</h2>

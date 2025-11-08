@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../contexts/CartContext';
 import {Row, Col, Button, InputNumber, Descriptions, Modal, Spin, Alert, message, Tag} from 'antd';
-import {bookApi} from '../services/api';
+import {bookApi, externalApi} from '../services/api';
 
 export default function BookDetailPage() {
   // 使用自定义Hook获取路由参数
@@ -17,6 +17,8 @@ export default function BookDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [authorLookupLoading, setAuthorLookupLoading] = useState(false);
+  const [authorFromService, setAuthorFromService] = useState(null);
 
   // 加载书籍详情
   useEffect(() => {
@@ -50,6 +52,26 @@ export default function BookDetailPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 通过微服务查询作者
+  const handleLookupAuthor = async () => {
+    try {
+      setAuthorLookupLoading(true);
+      const resp = await externalApi.authorLookup(book.title);
+      if (resp && resp.success && resp.data) {
+        setAuthorFromService(resp.data.author);
+        message.success(`作者(微服务)：${resp.data.author}`);
+      } else {
+        setAuthorFromService(null);
+        message.warning(resp?.message || '未找到该书作者');
+      }
+    } catch (e) {
+      setAuthorFromService(null);
+      message.error('查询作者失败，请稍后再试');
+    } finally {
+      setAuthorLookupLoading(false);
     }
   };
 
@@ -213,7 +235,20 @@ export default function BookDetailPage() {
             >
               立即购买
             </Button>
+            <Button
+              style={{ marginLeft: '12px' }}
+              onClick={handleLookupAuthor}
+              loading={authorLookupLoading}
+            >
+              查询作者(微服务)
+            </Button>
           </div>
+
+          {authorFromService && (
+            <div style={{ marginTop: 12, color: '#555' }}>
+              微服务返回作者：{authorFromService}
+            </div>
+          )}
         </Col>
       </Row>
     </div>
