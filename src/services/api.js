@@ -1,5 +1,5 @@
-// API基础URL
-const API_BASE_URL = 'http://localhost:8080/api';
+// API基础URL（支持 .env 配置）
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081/api';
 
 // 通用请求处理函数
 async function request(url, options = {}) {

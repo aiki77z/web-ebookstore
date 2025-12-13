@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, message } from 'antd';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined, TeamOutlined, ShoppingOutlined, BarChartOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, SettingOutlined, BookOutlined, TeamOutlined, ShoppingOutlined, BarChartOutlined, WechatOutlined } from '@ant-design/icons';
 import authService from '../services/authService';
 
 const { Sider, Content, Header } = Layout;
@@ -24,6 +24,7 @@ export default function LayoutComponent({ children }) {
         else if (path === '/personal') setSelectedKeys(['3']);
         else if (path === '/orders') setSelectedKeys(['4']);
         else if (path === '/statistics') setSelectedKeys(['5']);
+        else if (path === '/chat') setSelectedKeys(['chat']);
         else if (path === '/admin/books') setSelectedKeys(['6']);
         else if (path === '/admin/users') setSelectedKeys(['7']);
         else if (path === '/admin/orders') setSelectedKeys(['8']);
@@ -141,6 +142,9 @@ export default function LayoutComponent({ children }) {
                         </Menu.Item>
                         <Menu.Item key="5" icon={<BarChartOutlined />}>
                             <Link to="/statistics">我的统计</Link>
+                        </Menu.Item>
+                        <Menu.Item key="chat" icon={<WechatOutlined />}>
+                            <Link to="/chat">聊天机器人</Link>
                         </Menu.Item>
                         
                         {/* 管理员菜单 */}

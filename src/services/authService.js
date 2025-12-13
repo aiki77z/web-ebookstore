@@ -3,7 +3,7 @@
  * 处理用户登录、注册、登出等功能
  */
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081/api';
 
 class AuthService {
     

@@ -17,6 +17,8 @@ import AdminUserPage from './pages/AdminUserPage';
 import AdminOrderPage from './pages/AdminOrderPage';
 import AdminStatisticsPage from './pages/AdminStatisticsPage';
 import PersonalStatisticsPage from './pages/PersonalStatisticsPage';
+import ChatPage from './pages/ChatPage';
+import ChatWidget from './components/ChatWidget';
 
 // 受保护的布局组件
 const ProtectedLayout = ({ children, requireAdmin = false }) => (
@@ -55,6 +57,7 @@ function App() {
                 
                 {/* 用户统计路由 */}
                 <Route path="/statistics" element={<ProtectedLayout><PersonalStatisticsPage /></ProtectedLayout>} />
+                <Route path="/chat" element={<ProtectedLayout><ChatPage /></ProtectedLayout>} />
                 
                 {/* 404页面 */}
                 <Route path="*" element={
@@ -72,6 +75,7 @@ function App() {
                 } />
               </Routes>
             </Router>
+            <ChatWidget />
           </CartProvider>
         </AuthProvider>
       </AntdApp>

@@ -1,0 +1,85 @@
+
+.chat-panel-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.chat-panel-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fff;
+}
+
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  word-break: break-word;
+}
+
+.chat-message-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f0f0f0;
+}
+
+.chat-message-user .chat-message-content {
+  background: #1890ff;
+  color: #fff;
+}
+
+.chat-panel-footer {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.chat-toggle-button {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(24, 144, 255, 0.6);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  }
+}
+
+/* 滚动条样式 */
+.chat-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-panel-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-panel-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.chat-panel-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+

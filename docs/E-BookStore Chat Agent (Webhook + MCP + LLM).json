@@ -1,0 +1,188 @@
+{
+  "name": "E-BookStore Chat Agent (Webhook + MCP + LLM)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "lastNode",
+        "options": {
+          "responseContentType": "application/json",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST,OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Webhook /chat",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        416
+      ],
+      "webhookId": "chat",
+      "id": "f992fa5d-447a-41da-802a-f4d3ef25f684"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.MCP_BOOK_SERVICE_URL || 'http://host.docker.internal:8787/books'}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "MCP: search books",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2192,
+        416
+      ],
+      "id": "1c02ecd8-4102-4504-a1a2-8d903aa0388b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookNode = $node[\"Webhook /chat\"];\nconst webhookData = webhookNode?.json?.body || {};\nconst question = webhookData.message || \"\";\nconst history = webhookData.history || [];\n\nconst mcpNode = $node[\"MCP: search books\"];\nconst books = mcpNode?.json || {};\nconst bookData = Array.isArray(books) ? books[0] : books;\n\nconst systemPrompt = `你是电子书店智能助手...`;\n\nconst historyMessages = history\n  .filter((m) => m && m.role && m.content)\n  .map((m) => ({ role: m.role, content: String(m.content) }));\n\nlet bookSnippet = \"\";\nif (bookData && bookData.results && Array.isArray(bookData.results)) {\n  const booksList = bookData.results.slice(0, 20);\n  bookSnippet = JSON.stringify({\n    count: bookData.count || 0,\n    books: booksList.map((book) => ({\n      title: book.title,\n      author: book.author,\n      price: book.price,\n      status: book.status,\n      stock: book.stock,\n      isbn: book.isbn,\n    })),\n  });\n} else {\n  bookSnippet = JSON.stringify(bookData || {});\n}\n\nif (bookSnippet.length > 6000) {\n  bookSnippet = bookSnippet.slice(0, 6000) + \"...\";\n}\n\nconst messages = [\n  { role: \"system\", content: systemPrompt },\n  ...historyMessages,\n  {\n    role: \"user\",\n    content: `用户问题：${question}\\n\\n书籍数据（来自 MCP 服务）：${bookSnippet}`,\n  },\n];\n\nreturn {\n  json: {\n    messages: messages,\n    question: question,\n    bookCount: bookData?.count || 0,\n  },\n};"
+      },
+      "name": "Prepare LLM Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2416,
+        416
+      ],
+      "id": "221204b5-0509-4e0b-9008-afecd342db0d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'}}/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "deepSeekApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "= {{JSON.stringify({ model: $env.DEEPSEEK_MODEL || 'deepseek-chat', messages: $json.messages, temperature: 0.7 })}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Call DeepSeek API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        416
+      ],
+      "id": "797e40cb-a26d-4180-8954-e63d73331463",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "tFLy1qrXHgwTBV4f",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": " const prepareNode = $node[\"Prepare LLM Request\"];\n     const question = prepareNode?.json?.question || \"\";\n     const bookCount = prepareNode?.json?.bookCount || 0;\n\n     const llmResponse = $json;\n     const answer = llmResponse.choices?.[0]?.message?.content || \"（模型未返回内容）\";\n     const model = llmResponse.model || \"unknown\";\n\n     return {\n       json: {\n         answer,\n         echoQuestion: question,\n         usedModel: model,\n         bookCount: bookCount,\n       },\n     };"
+      },
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        416
+      ],
+      "id": "ef15db96-9aed-4057-981b-8bea10a89731"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook /chat": {
+      "main": [
+        [
+          {
+            "node": "MCP: search books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP: search books": {
+      "main": [
+        [
+          {
+            "node": "Prepare LLM Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare LLM Request": {
+      "main": [
+        [
+          {
+            "node": "Call DeepSeek API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call DeepSeek API": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "c204fd2c-5a41-44ab-bd93-f1f3beaaaa6b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bfe0f46e938f18e172885d286f7cbac5b26ce5f796e293040142f7eddce6dc79"
+  },
+  "id": "qkyeSv2kybljhnO6",
+  "tags": []
+}
