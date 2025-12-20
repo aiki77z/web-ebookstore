@@ -1,5 +1,24 @@
-// API基础URL
-const API_BASE_URL = 'http://localhost:8080/api';
+// API基础URL（直接访问后端）
+const API_BASE_URL = 'http://localhost:8081/api';
+
+// GraphQL入口（直接访问后端）
+const GRAPHQL_ENDPOINT = 'http://localhost:8081/graphql';
+const SEARCH_BOOKS_QUERY = `
+  query SearchBooksByTitle($title: String!) {
+    searchBooksByTitle(title: $title) {
+      id
+      title
+      author
+      price
+      description
+      cover
+      status
+      stock
+      isbn
+      deleted
+    }
+  }
+`;
 
 // 通用请求处理函数
 async function request(url, options = {}) {
@@ -27,6 +46,37 @@ async function request(url, options = {}) {
     return data;
   } catch (error) {
     console.error('API请求失败:', error);
+    throw error;
+  }
+}
+
+// GraphQL请求封装
+async function graphqlRequest(query, variables = {}) {
+  try {
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`GraphQL请求失败: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const payload = await response.json();
+    if (payload.errors) {
+      console.error('GraphQL返回错误:', payload.errors);
+      throw new Error(payload.errors[0]?.message || 'GraphQL请求失败');
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.error('GraphQL请求异常:', error);
     throw error;
   }
 }
@@ -72,7 +122,13 @@ export const bookApi = {
   getBook: (id) => request(`/books/${id}`),
   
   // 搜索书籍
-  searchBooks: (query) => request(`/books/search?query=${encodeURIComponent(query)}`),
+  searchBooks: async (query) => {
+    const data = await graphqlRequest(SEARCH_BOOKS_QUERY, { title: query });
+    return {
+      success: true,
+      data: data?.searchBooksByTitle || [],
+    };
+  },
 };
 
 // 购物车相关API

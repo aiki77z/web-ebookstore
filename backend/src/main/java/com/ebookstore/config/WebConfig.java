@@ -46,5 +46,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true) // 允许Cookie
                 .maxAge(3600);
+
+        registry.addMapping("/graphql")
+                .allowedOrigins("http://localhost:3000")
+                .allowedMethods("POST", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 } 
