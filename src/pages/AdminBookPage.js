@@ -15,7 +15,7 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, StockOutlined } from '@ant-design/icons';
 import { adminBookApi } from '../services/api';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:8081/api';
 
 const AdminBookPage = () => {
     const [books, setBooks] = useState([]);
