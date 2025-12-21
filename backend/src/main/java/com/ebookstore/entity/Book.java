@@ -37,6 +37,9 @@ public class Book {
     @Column(length = 20)
     private String status;//AVAILABLE/OUT_OF_STOCK
     
+    @Column(length = 50)
+    private String category;
+
     @Column(nullable = false)
     private Integer stock = 100; // 库存量，默认100本
     
@@ -58,6 +61,9 @@ public class Book {
         updatedAt = LocalDateTime.now();
         if (deleted == null) {
             deleted = false;
+        }
+        if (category == null) {
+            category = "General";
         }
     }
     

@@ -32,6 +32,7 @@ public class BookDTO {
     private String description;
     private String cover;
     private String status;
+    private String category;
     
     @NotNull(message = "库存量不能为空")
     @Positive(message = "库存量必须大于0")
